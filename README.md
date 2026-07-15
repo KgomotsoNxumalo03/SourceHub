@@ -1,14 +1,14 @@
 # SourceHub
 
-SourceHub is a phased service management platform built with Next.js, TypeScript, Tailwind CSS, Prisma, SQLite for local development, and a secure session-based authentication layer.
+SourceHub is a phased service management platform built with Next.js, TypeScript, Tailwind CSS, Firebase Firestore, and a secure session-based authentication layer.
 
 ## Stack
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Prisma
-- SQLite
+- Firebase Firestore client
+- Firebase Admin SDK
 - Zod
 - bcryptjs
 - Lucide React icons
@@ -21,14 +21,21 @@ SourceHub is a phased service management platform built with Next.js, TypeScript
 ## Environment setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Update `DATABASE_URL` if you want to point at a different database. The local default uses SQLite.
+2. Place a Firebase Admin service-account file at `firebase-service-account.json`.
 3. Keep the development admin values only for local use.
 
 Required environment variables:
 
-- `DATABASE_URL`
 - `NEXT_PUBLIC_APP_NAME`
 - `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
+- `FIREBASE_SERVICE_ACCOUNT_PATH`
 - `DEV_ADMIN_EMAIL`
 - `DEV_ADMIN_PASSWORD`
 - `DEV_ADMIN_FIRST_NAME`
@@ -50,18 +57,14 @@ Development-only login defaults:
 - Email: `admin@sourcehub.local`
 - Password: `SourceHub123!`
 
-## Local database setup
+## Firestore setup
 
-The default development database is the SQLite file at `prisma/dev.db`.
-
-If you want to use PostgreSQL instead, update `DATABASE_URL` to match your local credentials.
+SourceHub uses the Firebase project configured in the public environment variables. Server-side access uses the ignored Firebase Admin service-account JSON file.
 
 ## Commands
 
 ```bash
 npm install
-npm run prisma:generate
-npm run prisma:migrate
 npm run seed
 npm run dev
 ```
@@ -85,7 +88,7 @@ npm run build
 - `app/` application routes and pages
 - `components/` shared design system and shell
 - `lib/` data access, auth, and server utilities
-- `prisma/` schema and seed
+- `scripts/` Firestore seed utilities
 - `public/` static assets
 - `next-types.d.ts` Next.js module shims used during local development
 
@@ -96,7 +99,7 @@ SourceHub uses database-driven roles and permissions. Permissions are evaluated 
 ## Phase 1 completed features
 
 - Project scaffold and production scripts
-- Prisma schema for users, roles, permissions, audit logs, notifications, sessions, and settings
+- Firestore collections for users, roles, permissions, audit logs, notifications, sessions, settings, employees, and tickets
 - Seed data for core roles, permissions, a development admin account, and notifications
 - Database-backed login/logout
 - Protected app shell

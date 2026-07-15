@@ -14,7 +14,7 @@ export default async function NewRolePage({
   await requirePermission("roles.manage");
   const params = (await searchParams) ?? {};
   const permissions = await prisma.permission.findMany({ orderBy: [{ module: "asc" }, { action: "asc" }] });
-  const modules = Array.from(new Set(permissions.map((permission) => permission.module)));
+  const modules = Array.from(new Set<string>(permissions.map((permission) => String(permission.module))));
 
   return (
     <div className="space-y-8">

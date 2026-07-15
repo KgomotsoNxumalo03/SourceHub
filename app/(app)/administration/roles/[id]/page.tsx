@@ -46,7 +46,7 @@ export default async function EditRolePage({
     );
   }
 
-  const modules = Array.from(new Set(permissions.map((permission) => permission.module)));
+  const modules = Array.from(new Set<string>(permissions.map((permission) => String(permission.module))));
   const assignedPermissionIds = new Set(role.permissions.map((entry) => entry.permissionId));
 
   return (

@@ -6,6 +6,8 @@ coverage
 .env
 .env.local
 .env.*.local
+firebase-service-account*.json
+service-account*.json
 *.log
 *.err
 *.out
