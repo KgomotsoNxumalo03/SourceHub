@@ -6,7 +6,6 @@ export default [
       ".next/**",
       ".tmp-pkgs/**",
       "node_modules/**",
-      "prisma/migrations/**",
       "**/*.tgz",
     ],
   },

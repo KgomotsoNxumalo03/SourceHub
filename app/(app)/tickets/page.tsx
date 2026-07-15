@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AlertTriangle, BadgeCheck, Clock3, Ticket } from "lucide-react";
-import type { Prisma } from "@prisma/client";
 
 import { buttonClassName } from "@/lib/button";
 import { requireAuth } from "@/lib/auth";
@@ -46,7 +45,7 @@ export default async function TicketsPage({
       })
     : [];
 
-  const baseScope: Prisma.TicketWhereInput = ticketScopeWhere(actor);
+  const baseScope: Record<string, unknown> = ticketScopeWhere(actor);
   const statusFilter =
     params.status && ticketStatusLabels[params.status as keyof typeof ticketStatusLabels]
       ? { status: params.status as keyof typeof ticketStatusLabels }

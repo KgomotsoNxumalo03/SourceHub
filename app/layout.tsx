@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { FirebaseAnalytics } from "@/components/firebase-analytics";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         {children}
+        <FirebaseAnalytics />
       </body>
     </html>
   );

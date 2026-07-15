@@ -1,4 +1,5 @@
-import type { JsonValue } from "@prisma/client/runtime/library";
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 export function serializeJsonValue(value: unknown) {
   if (value === undefined) {

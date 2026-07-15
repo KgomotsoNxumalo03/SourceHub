@@ -1,4 +1,4 @@
-import type { UserStatus } from "@prisma/client";
+export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export type CurrentUser = {
   id: string;

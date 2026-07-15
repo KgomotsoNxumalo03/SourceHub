@@ -3,10 +3,6 @@ import "server-only";
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z
-    .string()
-    .min(1, "DATABASE_URL is required")
-    .default("file:./dev.db"),
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default("SourceHub"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   DEV_ADMIN_EMAIL: z.string().email().default("admin@sourcehub.local"),

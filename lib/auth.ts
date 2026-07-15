@@ -51,7 +51,7 @@ export async function currentUser(): Promise<CurrentUser | null> {
   const session = await getSessionRecord();
   if (!session) return null;
 
-  const roleMap = new Map(
+  const roleMap = new Map<string, CurrentUser["roles"][number]>(
     session.user.roles.map((entry) => [
       entry.role.name,
       {
