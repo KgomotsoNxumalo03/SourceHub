@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sourcehub-bg: 230 235 242;
+  --sourcehub-surface: 255 255 255;
+  --sourcehub-muted: 230 235 242;
+  --sourcehub-border: 208 216 228;
+  --sourcehub-text: 26 26 26;
+  --sourcehub-primary: 15 70 176;
+  --sourcehub-secondary: 17 56 109;
+  --sourcehub-accent: 11 188 235;
+  --sourcehub-navy-950: 9 32 88;
+  --sourcehub-navy-900: 17 56 109;
+  --sourcehub-navy-800: 15 70 176;
+  --sourcehub-sky-500: 11 188 235;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(11, 188, 235, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(15, 70, 176, 0.12), transparent 28%),
+    linear-gradient(180deg, rgb(var(--sourcehub-bg)) 0%, rgb(242 246 250) 100%);
+  color: rgb(var(--sourcehub-text));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(11, 188, 235, 0.24);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

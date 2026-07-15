@@ -1,0 +1,15 @@
+.next
+node_modules
+dist
+coverage
+.agents
+.env
+.env.local
+.env.*.local
+*.log
+*.err
+*.out
+*.tgz
+*.tsbuildinfo
+prisma/dev.db
+public/uploads

@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_FOR_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model User {
+  id              String        @id @default(cuid())
+  employeeNumber  String        @unique
+  firstName       String
+  lastName        String
+  email           String        @unique
+  passwordHash    String?
+  phone           String?
+  jobTitle        String?
+  department      String?
+  profileImageUrl String?
+  status          UserStatus     @default(ACTIVE)
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  roles           UserRole[]
+  sessions        Session[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  requestedTickets Ticket[]      @relation("TicketRequester")
+  assignedTickets  Ticket[]      @relation("TicketAssignee")
+  createdTickets   Ticket[]      @relation("TicketCreator")
+  updatedTickets   Ticket[]      @relation("TicketUpdater")
+  ticketComments   TicketComment[]
+  ticketAttachments TicketAttachment[]
+  ticketHistory    TicketHistory[]
+
+  @@index([status])
+  @@index([department])
+  @@index([lastName, firstName])
+}
+
+model Role {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  description  String?
+  isSystemRole  Boolean         @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  users        UserRole[]
+  permissions  RolePermission[]
+
+  @@index([isSystemRole])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String?
+  module      String
+  action      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+
+  @@index([module])
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId  String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ipAddress   String?
+  userAgent   String?
+  revokedAt   DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  action        String
+  entityType    String
+  entityId      String?
+  previousValues String?
+  newValues      String?
+  metadata       String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([action])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  readAt    DateTime?
+  link      String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+model TicketCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tickets     Ticket[]
+
+  @@index([isActive])
+}
+
+model TicketSequence {
+  name       String   @id
+  currentValue Int    @default(1)
+  updatedAt   DateTime @updatedAt
+}
+
+model Ticket {
+  id             String          @id @default(cuid())
+  referenceNumber String         @unique
+  subject        String
+  description    String
+  status         TicketStatus    @default(NEW)
+  priority       TicketPriority  @default(NORMAL)
+  categoryId     String?
+  requesterId    String
+  assigneeId     String?
+  createdById    String?
+  updatedById    String?
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       TicketCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  requester      User            @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assignee       User?           @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy      User?           @relation("TicketCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy      User?           @relation("TicketUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  comments       TicketComment[]
+  attachments    TicketAttachment[]
+  history        TicketHistory[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId, status])
+  @@index([requesterId, status])
+  @@index([categoryId])
+  @@index([createdAt])
+}
+
+model TicketComment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  authorId    String?
+  body        String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  attachments TicketAttachment[]
+
+  @@index([ticketId, createdAt])
+  @@index([isInternal])
+}
+
+model TicketAttachment {
+  id            String   @id @default(cuid())
+  ticketId      String
+  commentId     String?
+  uploaderId    String?
+  fileName      String
+  originalName  String
+  mimeType      String
+  fileSize      Int
+  storagePath   String
+  createdAt     DateTime @default(now())
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  comment       TicketComment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  uploader      User?    @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketHistory {
+  id            String   @id @default(cuid())
+  ticketId      String
+  actorId       String?
+  action        String
+  previousValues String?
+  newValues      String?
+  metadata       String?
+  createdAt     DateTime @default(now())
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor         User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@index([action])
+}
