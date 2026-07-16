@@ -75,9 +75,10 @@ export async function loginAction(
     data: { lastLoginAt: new Date() },
   });
 
+  const requestHeaders = await headers();
   const ipAddress =
-    headers().get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headers().get("x-real-ip") ??
+    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    requestHeaders.get("x-real-ip") ??
     null;
 
   await logAudit({
@@ -98,9 +99,10 @@ export async function loginAction(
 export async function logoutAction() {
   const user = await currentUser();
   if (user) {
+    const requestHeaders = await headers();
     const ipAddress =
-      headers().get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      headers().get("x-real-ip") ??
+      requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      requestHeaders.get("x-real-ip") ??
       null;
 
     await logAudit({
