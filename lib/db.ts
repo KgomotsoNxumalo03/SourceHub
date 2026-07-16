@@ -7,7 +7,9 @@ import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 type RecordData = Record<string, any>;
 
 const serviceAccountPath =
-  process.env.FIREBASE_SERVICE_ACCOUNT_PATH ?? join(process.cwd(), "firebase-service-account.json");
+  process.env.SOURCEHUB_FIREBASE_SERVICE_ACCOUNT_PATH ??
+  process.env.FIREBASE_SERVICE_ACCOUNT_PATH ??
+  join(process.cwd(), "firebase-service-account.json");
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
 
 const adminApp =
@@ -49,6 +51,56 @@ function convertValue(value: any): any {
 async function raw(model: keyof typeof collections) {
   const snapshot = await firestoreAdmin.collection(collections[model]).get();
   return snapshot.docs.map((document) => ({ id: document.id, ...convertValue(document.data()) }));
+}
+
+async function rawDocument(model: keyof typeof collections, id: string) {
+  const document = await firestoreAdmin.collection(collections[model]).doc(id).get();
+  return document.exists ? { id: document.id, ...convertValue(document.data()) } : null;
+}
+
+function simpleWhere(where?: RecordData) {
+  if (!where || Object.keys(where).length === 0) return [] as Array<[string, FirebaseFirestore.WhereFilterOp, any]>;
+  if (where.AND || where.OR || where.NOT) return null;
+  const clauses: Array<[string, FirebaseFirestore.WhereFilterOp, any]> = [];
+  for (const [field, condition] of Object.entries(where)) {
+    if (condition === undefined) continue;
+    if (condition === null || typeof condition !== "object" || condition instanceof Date) {
+      clauses.push([field, "==", condition]);
+      continue;
+    }
+    if ("equals" in condition) clauses.push([field, "==", condition.equals]);
+    else if ("in" in condition) clauses.push([field, "in", condition.in]);
+    else if ("notIn" in condition) clauses.push([field, "not-in", condition.notIn]);
+    else if ("gt" in condition) clauses.push([field, ">", condition.gt]);
+    else if ("gte" in condition) clauses.push([field, ">=", condition.gte]);
+    else if ("lt" in condition) clauses.push([field, "<", condition.lt]);
+    else if ("lte" in condition) clauses.push([field, "<=", condition.lte]);
+    else return null;
+  }
+  return clauses;
+}
+
+async function rawMany(model: keyof typeof collections, args: RecordData = {}) {
+  const clauses = simpleWhere(args.where);
+  if (clauses === null) return null;
+  let query: FirebaseFirestore.Query = firestoreAdmin.collection(collections[model]);
+  for (const [field, operator, value] of clauses) query = query.where(field, operator, value);
+  const orderBy = !args.orderBy ? [] : Array.isArray(args.orderBy) ? args.orderBy : [args.orderBy];
+  for (const rule of orderBy) {
+    const [field, direction] = Object.entries(rule)[0] as [string, FirebaseFirestore.OrderByDirection];
+    query = query.orderBy(field, direction);
+  }
+  if (args.skip) query = query.offset(args.skip);
+  if (args.take != null) query = query.limit(args.take);
+  try {
+    const snapshot = await query.get();
+    return snapshot.docs.map((document) => ({ id: document.id, ...convertValue(document.data()) }));
+  } catch (error: any) {
+    // Firestore requires composite indexes for some filter/order combinations.
+    // Preserve functionality until that optional index is provisioned.
+    if (error?.code === 9 || error?.code === "failed-precondition") return null;
+    throw error;
+  }
 }
 
 function scalarMatches(actual: any, condition: any): boolean {
@@ -116,26 +168,31 @@ function project(record: RecordData | null, select?: RecordData) {
   return Object.fromEntries(Object.entries(select).filter(([, enabled]) => enabled).map(([key]) => [key, record[key]]));
 }
 
-async function hydrate(model: keyof typeof collections, record: RecordData): Promise<RecordData> {
+async function hydrate(model: keyof typeof collections, record: RecordData, include?: RecordData): Promise<RecordData> {
+  if (!include) return record;
   if (model === "user") {
-    const links = (await raw("userRole")).filter((item) => item.userId === record.id);
-    const roles = await raw("role");
+    const links = (await rawMany("userRole", { where: { userId: record.id } })) ?? [];
     record.roles = await Promise.all(links.map(async (link) => {
-      const role = roles.find((item) => item.id === link.roleId);
-      return { ...link, role: role ? await hydrate("role", role) : null };
+      const role = await rawDocument("role", link.roleId);
+      const roleInclude = include.roles?.include?.role?.include;
+      return { ...link, role: role ? await hydrate("role", role, roleInclude) : null };
     }));
   } else if (model === "role") {
-    const userLinks = (await raw("userRole")).filter((item) => item.roleId === record.id);
-    const permissionLinks = (await raw("rolePermission")).filter((item) => item.roleId === record.id);
-    const permissions = await raw("permission");
+    const [userLinks, permissionLinks] = await Promise.all([
+      rawMany("userRole", { where: { roleId: record.id } }),
+      rawMany("rolePermission", { where: { roleId: record.id } }),
+    ]);
     record.users = userLinks;
-    record.permissions = permissionLinks.map((link) => ({ ...link, permission: permissions.find((item) => item.id === link.permissionId) }));
-    record._count = { users: userLinks.length };
+    record.permissions = await Promise.all((permissionLinks ?? []).map(async (link) => ({
+      ...link,
+      permission: include.permissions?.include?.permission ? await rawDocument("permission", link.permissionId) : undefined,
+    })));
+    record._count = { users: userLinks?.length ?? 0 };
   } else if (model === "session") {
-    record.user = (await raw("user")).find((item) => item.id === record.userId) ?? null;
-    if (record.user) record.user = await hydrate("user", record.user);
+    record.user = await rawDocument("user", record.userId);
+    if (record.user) record.user = await hydrate("user", record.user, include.user?.include);
   } else if (model === "auditLog" || model === "notification") {
-    record.user = (await raw("user")).find((item) => item.id === record.userId) ?? null;
+    record.user = await rawDocument("user", record.userId);
   } else if (model === "ticket") {
     const [users, categories, comments, attachments, history] = await Promise.all([
       raw("user"), raw("ticketCategory"), raw("ticketComment"), raw("ticketAttachment"), raw("ticketHistory"),
@@ -178,22 +235,39 @@ function repository(model: keyof typeof collections) {
   const collection = firestoreAdmin.collection(collections[model]);
   return {
     async findMany(args: RecordData = {}) {
-      let records = await Promise.all((await raw(model)).map((record) => hydrate(model, record)));
-      records = records.filter((record) => matches(record, args.where));
-      sortRecords(records, args.orderBy);
-      if (args.skip) records = records.slice(args.skip);
-      if (args.take != null) records = records.slice(0, args.take);
+      const queried = await rawMany(model, args);
+      let records = queried ?? await raw(model);
+      if (queried === null) {
+        records = records.filter((record) => matches(record, args.where));
+        sortRecords(records, args.orderBy);
+        if (args.skip) records = records.slice(args.skip);
+        if (args.take != null) records = records.slice(0, args.take);
+      }
+      records = await Promise.all(records.map((record) => hydrate(model, record, args.include)));
       return records.map((record) => project(record, args.select));
     },
     async findUnique(args: RecordData) {
-      const records = (await this.findMany({ where: args.where })).filter((record: RecordData | null): record is RecordData => Boolean(record));
-      return project(records[0] ?? null, args.select);
+      let record: RecordData | null = null;
+      if (typeof args.where?.id === "string") record = await rawDocument(model, args.where.id);
+      else {
+        const records = await rawMany(model, { where: args.where, take: 1 });
+        if (records) record = records[0] ?? null;
+        else record = (await raw(model)).find((item) => matches(item, args.where)) ?? null;
+      }
+      if (record) record = await hydrate(model, record, args.include);
+      return project(record, args.select);
     },
     async findFirst(args: RecordData = {}) {
       const records = await this.findMany({ ...args, take: 1 });
       return records[0] ?? null;
     },
     async count(args: RecordData = {}) {
+      const clauses = simpleWhere(args.where);
+      if (clauses !== null) {
+        let query: FirebaseFirestore.Query = collection;
+        for (const [field, operator, value] of clauses) query = query.where(field, operator, value);
+        return (await query.count().get()).data().count;
+      }
       return (await this.findMany({ where: args.where })).length;
     },
     async create(args: RecordData) {
@@ -204,7 +278,7 @@ function repository(model: keyof typeof collections) {
       await reference.set(data);
       const created = { id: reference.id, ...data };
       await createNested(model, created.id, args.data);
-      return hydrate(model, created);
+      return hydrate(model, created, args.include);
     },
     async createMany(args: RecordData) {
       const items = args.data ?? [];
@@ -217,7 +291,7 @@ function repository(model: keyof typeof collections) {
       const data = { ...cleanData(args.data), updatedAt: new Date() };
       await collection.doc(existing.id).update(data);
       await updateNested(model, existing.id, args.data);
-      return hydrate(model, { ...existing, ...data });
+      return hydrate(model, { ...existing, ...data }, args.include);
     },
     async updateMany(args: RecordData) {
       const records = (await this.findMany({ where: args.where })).filter((record: RecordData | null): record is RecordData => Boolean(record));

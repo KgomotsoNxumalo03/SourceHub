@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "seed": "tsx --env-file=.env.local scripts/seed-firestore.mjs && tsx --env-file=.env.local scripts/sync-employees.ts"
+    "seed": "tsx --env-file=.env.local scripts/seed-firestore.mjs && tsx --env-file=.env.local scripts/sync-employees.ts",
+    "seed:superusers": "tsx --env-file=.env.local scripts/seed-superusers.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

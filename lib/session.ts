@@ -24,11 +24,12 @@ export function sessionExpiresAt() {
 export async function createSession(userId: string) {
   const token = createRawToken();
   const tokenHash = hashToken(token);
+  const requestHeaders = await headers();
   const ipAddress =
-    headers().get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headers().get("x-real-ip") ??
+    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    requestHeaders.get("x-real-ip") ??
     null;
-  const userAgent = headers().get("user-agent");
+  const userAgent = requestHeaders.get("user-agent");
 
   const session = await prisma.session.create({
     data: {
