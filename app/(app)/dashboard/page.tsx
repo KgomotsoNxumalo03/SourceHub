@@ -41,47 +41,47 @@ export default async function DashboardPage() {
     },
     {
       label: "Phase 2",
-      state: "Upcoming",
-      tone: "warning" as const,
+      state: "Completed",
+      tone: "success" as const,
       detail: "Service desk tickets, queues, attachments, and history",
     },
     {
       label: "Phase 3",
-      state: "Upcoming",
-      tone: "warning" as const,
-      detail: "Client management and relationship tracking",
+      state: "Completed",
+      tone: "success" as const,
+      detail: "Advanced service desk, SLAs, automation, and email workflows",
     },
     {
       label: "Phase 4",
-      state: "Upcoming",
-      tone: "warning" as const,
-      detail: "Asset inventory and lifecycle management",
+      state: "Completed",
+      tone: "success" as const,
+      detail: "Clients, sites, contacts, contracts, support agreements, and CRM",
     },
     {
       label: "Phase 5",
-      state: "Upcoming",
+      state: "In progress",
       tone: "warning" as const,
-      detail: "Employee tooling and broader operational workflows",
+      detail: "Asset inventory, lifecycle management, software, licences, and warranties",
     },
   ];
 
   const platformCards = [
     {
       label: "Open Tickets",
-      value: "Coming in Phase 2",
-      hint: "Ticketing is intentionally deferred until the next delivery phase.",
+      value: summary.openTickets.toLocaleString(),
+      hint: "New, in-progress, and waiting tickets.",
       icon: <Ticket className="h-5 w-5" />,
     },
     {
       label: "Active Clients",
-      value: "Coming in Phase 4",
-      hint: "Client management will be introduced after the core platform stabilises.",
+      value: "Available now",
+      hint: "CRM records, sites, and support agreements are live.",
       icon: <BriefcaseBusiness className="h-5 w-5" />,
     },
     {
       label: "Managed Assets",
-      value: "Coming in Phase 5",
-      hint: "Asset tracking is planned for a later rollout.",
+      value: summary.activeAssets.toLocaleString(),
+      hint: "Active, deployed, and loaned assets in the workspace.",
       icon: <Boxes className="h-5 w-5" />,
     },
     {
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>SourceHub implementation status</CardTitle>
-              <p className="mt-1 text-sm text-slate-600">A concise view of what is live now and what is planned next.</p>
+              <p className="mt-1 text-sm text-slate-600">A concise view of what is live now and what is being expanded.</p>
             </CardHeader>
             <CardContent className="space-y-3">
               {implementationStatus.map((item) => (
@@ -165,6 +165,33 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent assets</CardTitle>
+              <p className="mt-1 text-sm text-slate-600">The latest inventory changes across the workspace.</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {summary.recentAssets.length === 0 ? (
+                <p className="text-sm text-slate-600">No assets have been added yet.</p>
+              ) : (
+                summary.recentAssets.map((asset) => (
+                  <Link key={asset.id} href={`/assets/${asset.id}`} className="block rounded-2xl border border-sourcehub-border p-4 transition hover:border-sourcehub-primary">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-sourcehub-text">{asset.assetTag}</p>
+                        <p className="text-sm text-slate-600">{asset.name}</p>
+                      </div>
+                      <Badge tone="outline">{asset.assetType?.name ?? "Asset"}</Badge>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {asset.client?.name ?? "Internal"}{asset.assignedUser ? ` · ${asset.assignedUser.firstName} ${asset.assignedUser.lastName}` : ""}
+                    </p>
+                  </Link>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>

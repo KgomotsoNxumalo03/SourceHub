@@ -19,6 +19,7 @@ const adminApp =
     projectId: serviceAccount.project_id,
   });
 
+export { adminApp };
 export const firestoreAdmin = getFirestore(adminApp);
 
 const collections = {
@@ -37,6 +38,43 @@ const collections = {
   ticketComment: "ticketComments",
   ticketAttachment: "ticketAttachments",
   ticketHistory: "ticketHistory",
+  slaPolicy: "slaPolicies",
+  slaEvent: "slaEvents",
+  escalation: "escalations",
+  escalationExecution: "escalationExecutions",
+  automationRule: "automationRules",
+  automationExecution: "automationExecutions",
+  emailMessage: "emailMessages",
+  emailAttachment: "emailAttachments",
+  emailRetry: "emailRetries",
+  asset: "assets",
+  assetType: "assetTypes",
+  assetAssignment: "assetAssignments",
+  assetEvent: "assetEvents",
+  assetSoftware: "assetSoftware",
+  softwareCatalog: "softwareCatalog",
+  softwareLicence: "softwareLicences",
+  licenceAssignment: "licenceAssignments",
+  assetMaintenance: "assetMaintenance",
+  assetWarranty: "assetWarranties",
+  assetFile: "assetFiles",
+  assetImport: "assetImports",
+  assetTagCounter: "assetTagCounters",
+  assetHealthSnapshot: "assetHealthSnapshots",
+  workspace: "workspaces",
+  client: "clients",
+  clientContact: "clientContacts",
+  clientSite: "clientSites",
+  contract: "contracts",
+  supportAgreement: "supportAgreements",
+  billingProfile: "billingProfiles",
+  clientNote: "clientNotes",
+  clientFile: "clientFiles",
+  portalInvitation: "portalInvitations",
+  portalAccount: "portalAccounts",
+  businessHour: "businessHours",
+  publicHoliday: "publicHolidays",
+  technicianQueue: "technicianQueues",
 } as const;
 
 function convertValue(value: any): any {
@@ -71,6 +109,8 @@ function simpleWhere(where?: RecordData) {
     if ("equals" in condition) clauses.push([field, "==", condition.equals]);
     else if ("in" in condition) clauses.push([field, "in", condition.in]);
     else if ("notIn" in condition) clauses.push([field, "not-in", condition.notIn]);
+    else if ("arrayContains" in condition) clauses.push([field, "array-contains", condition.arrayContains]);
+    else if ("arrayContainsAny" in condition) clauses.push([field, "array-contains-any", condition.arrayContainsAny]);
     else if ("gt" in condition) clauses.push([field, ">", condition.gt]);
     else if ("gte" in condition) clauses.push([field, ">=", condition.gte]);
     else if ("lt" in condition) clauses.push([field, "<", condition.lt]);
@@ -110,6 +150,8 @@ function scalarMatches(actual: any, condition: any): boolean {
   if ("equals" in condition && actual !== condition.equals) return false;
   if ("in" in condition && !condition.in.includes(actual)) return false;
   if ("notIn" in condition && condition.notIn.includes(actual)) return false;
+  if ("arrayContains" in condition && !(Array.isArray(actual) && actual.includes(condition.arrayContains))) return false;
+  if ("arrayContainsAny" in condition && !(Array.isArray(actual) && condition.arrayContainsAny.some((item: any) => actual.includes(item)))) return false;
   if ("not" in condition && scalarMatches(actual, condition.not)) return false;
   if ("contains" in condition) {
     const left = String(actual ?? "");
@@ -143,6 +185,8 @@ function matches(record: RecordData, where?: RecordData): boolean {
       if ("some" in condition) return Array.isArray(actual) && actual.some((item) => matches(item, condition.some));
       if ("none" in condition) return Array.isArray(actual) && !actual.some((item) => matches(item, condition.none));
       if ("is" in condition) return condition.is === null ? actual == null : matches(actual, condition.is);
+      if ("arrayContains" in condition) return Array.isArray(actual) && actual.includes(condition.arrayContains);
+      if ("arrayContainsAny" in condition) return Array.isArray(actual) && condition.arrayContainsAny.some((item: any) => actual.includes(item));
     }
     return scalarMatches(actual, condition);
   });
@@ -202,6 +246,12 @@ async function hydrate(model: keyof typeof collections, record: RecordData, incl
     record.createdBy = users.find((item) => item.id === record.createdById) ?? null;
     record.updatedBy = users.find((item) => item.id === record.updatedById) ?? null;
     record.category = categories.find((item) => item.id === record.categoryId) ?? null;
+    const [clients, agreements, policies, assets] = await Promise.all([raw("client"), raw("supportAgreement"), raw("slaPolicy"), raw("asset")]);
+    record.client = clients.find((item) => item.id === record.clientId) ?? null;
+    record.site = (await raw("clientSite")).find((item) => item.id === record.siteId) ?? null;
+    record.supportAgreement = agreements.find((item) => item.id === record.supportAgreementId) ?? null;
+    record.slaPolicy = policies.find((item) => item.id === record.slaPolicyId) ?? null;
+    record.asset = assets.find((item) => item.id === record.assetId) ?? null;
     record.comments = comments.filter((item) => item.ticketId === record.id).map((item) => ({
       ...item,
       author: users.find((user) => user.id === item.authorId) ?? null,
@@ -212,6 +262,47 @@ async function hydrate(model: keyof typeof collections, record: RecordData, incl
       ...item,
       actor: users.find((user) => user.id === item.actorId) ?? null,
     }));
+  } else if (model === "client") {
+    record.contacts = (await rawMany("clientContact", { where: { clientId: record.id } })) ?? [];
+    record.sites = (await rawMany("clientSite", { where: { clientId: record.id } })) ?? [];
+    record.contracts = (await rawMany("contract", { where: { clientId: record.id } })) ?? [];
+    record.supportAgreements = (await rawMany("supportAgreement", { where: { clientId: record.id } })) ?? [];
+    record.billingProfiles = (await rawMany("billingProfile", { where: { clientId: record.id } })) ?? [];
+    record.notes = (await rawMany("clientNote", { where: { clientId: record.id } })) ?? [];
+    record.files = (await rawMany("clientFile", { where: { clientId: record.id } })) ?? [];
+    record.portalInvitations = (await rawMany("portalInvitation", { where: { clientId: record.id } })) ?? [];
+  } else if (model === "slaPolicy") {
+    record.events = (await rawMany("slaEvent", { where: { slaPolicyId: record.id } })) ?? [];
+  } else if (model === "asset") {
+    const [assetTypes, clients, sites, users, tickets, assignments, maintenance, warranties, files, events, software, licences, healthSnapshots] = await Promise.all([
+      raw("assetType"),
+      raw("client"),
+      raw("clientSite"),
+      raw("user"),
+      raw("ticket"),
+      rawMany("assetAssignment", { where: { assetId: record.id }, orderBy: [{ assignedAt: "desc" }] }),
+      rawMany("assetMaintenance", { where: { assetId: record.id }, orderBy: [{ startDate: "desc" }] }),
+      rawMany("assetWarranty", { where: { assetId: record.id }, orderBy: [{ expiryDate: "desc" }] }),
+      rawMany("assetFile", { where: { assetId: record.id }, orderBy: [{ createdAt: "desc" }] }),
+      rawMany("assetEvent", { where: { assetId: record.id }, orderBy: [{ createdAt: "desc" }] }),
+      rawMany("assetSoftware", { where: { assetId: record.id }, orderBy: [{ lastDetectedAt: "desc" }] }),
+      rawMany("softwareLicence", { where: { assetId: record.id } }),
+      rawMany("assetHealthSnapshot", { where: { assetId: record.id }, orderBy: [{ calculatedAt: "desc" }] }),
+    ]);
+    record.assetType = assetTypes.find((item) => item.id === record.assetTypeId) ?? null;
+    record.client = clients.find((item) => item.id === record.clientId) ?? null;
+    record.site = sites.find((item) => item.id === record.siteId) ?? null;
+    record.assignedUser = users.find((item) => item.id === record.assignedUserId) ?? null;
+    record.responsibleTechnician = users.find((item) => item.id === record.responsibleTechnicianId) ?? null;
+    record.tickets = tickets.filter((ticket) => ticket.assetId === record.id);
+    record.assignments = assignments ?? [];
+    record.maintenance = maintenance ?? [];
+    record.assetWarranties = warranties ?? [];
+    record.files = files ?? [];
+    record.events = events ?? [];
+    record.software = software ?? [];
+    record.licences = licences ?? [];
+    record.healthSnapshots = healthSnapshots ?? [];
   }
   return record;
 }

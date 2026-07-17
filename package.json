@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "seed": "tsx --env-file=.env.local scripts/seed-firestore.mjs && tsx --env-file=.env.local scripts/sync-employees.ts",
+    "test": "tsx --test tests/**/*.test.ts",
+    "seed": "tsx --env-file=.env.local scripts/seed-superusers.ts && tsx --env-file=.env.local scripts/seed-firestore.mjs && tsx --env-file=.env.local scripts/sync-employees.ts",
     "seed:superusers": "tsx --env-file=.env.local scripts/seed-superusers.ts"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "firebase-admin": "^14.1.0",
     "lucide-react": "^1.24.0",
     "next": "^15.4.0",
+    "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^4.0.5"

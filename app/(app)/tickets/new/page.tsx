@@ -14,6 +14,15 @@ export default async function NewTicketPage({
 }) {
   const actor = await requirePermission("tickets.create");
   const params = (await searchParams) ?? {};
+  const selectedAsset = params.assetId
+    ? await prisma.asset.findUnique({
+        where: { id: String(params.assetId) },
+        include: {
+          client: true,
+          site: true,
+        },
+      })
+    : null;
   const categories = await prisma.ticketCategory.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
@@ -66,12 +75,30 @@ export default async function NewTicketPage({
         </div>
       ) : null}
 
+      {selectedAsset ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Asset context</p>
+              <p className="mt-1 text-sm font-semibold text-sourcehub-text">{selectedAsset.assetTag} · {selectedAsset.name}</p>
+              <p className="text-xs text-slate-500">
+                {selectedAsset.client?.name ?? "Internal"} {selectedAsset.site?.name ? `· ${selectedAsset.site.name}` : ""}
+              </p>
+            </div>
+            <Link href={`/assets/${selectedAsset.id}`} className={buttonClassName({ variant: "outline", size: "sm" })}>
+              View asset
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Ticket details</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createTicketAction} encType="multipart/form-data" className="space-y-6">
+          <form id="create-ticket-form" action={createTicketAction} encType="multipart/form-data" className="space-y-6">
+            {selectedAsset ? <input type="hidden" name="assetId" value={selectedAsset.id} /> : null}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium text-sourcehub-text" htmlFor="subject">

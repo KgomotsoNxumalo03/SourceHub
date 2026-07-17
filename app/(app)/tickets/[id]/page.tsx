@@ -63,6 +63,13 @@ async function loadTicket(ticketId: string) {
           email: true,
         },
       },
+      asset: {
+        select: {
+          id: true,
+          assetTag: true,
+          name: true,
+        },
+      },
       comments: {
         orderBy: { createdAt: "asc" },
         include: {
@@ -221,6 +228,22 @@ export default async function TicketDetailPage({
           </div>
         }
       />
+
+      {ticket.asset ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Linked asset</p>
+              <p className="mt-1 text-sm font-semibold text-sourcehub-text">
+                {ticket.asset.assetTag} · {ticket.asset.name}
+              </p>
+            </div>
+            <Link href={`/assets/${ticket.asset.id}`} className={buttonClassName({ variant: "outline", size: "sm" })}>
+              View asset
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {query.created ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">Ticket created successfully.</div> : null}
       {query.updated ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">Ticket details updated.</div> : null}

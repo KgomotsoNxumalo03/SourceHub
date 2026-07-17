@@ -1,0 +1,227 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function hasPermission(permission) {
+      return signedIn()
+        && request.auth.token.permissions != null
+        && request.auth.token.permissions.hasAny([permission]);
+    }
+
+    function workspaceMatches(workspaceId) {
+      return signedIn() && request.auth.token.workspaceId == workspaceId;
+    }
+
+    function portalMatches(clientId) {
+      return signedIn()
+        && request.auth.token.portal == true
+        && request.auth.token.clientId == clientId;
+    }
+
+    match /workspaces/{workspaceId} {
+      allow read: if workspaceMatches(workspaceId) || hasPermission("workspaces.manage");
+      allow write: if hasPermission("workspaces.manage");
+    }
+
+    match /users/{userId} {
+      allow read: if hasPermission("users.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("users.edit") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /roles/{roleId} {
+      allow read: if hasPermission("roles.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("roles.manage");
+    }
+
+    match /permissions/{permissionId} {
+      allow read: if hasPermission("roles.view");
+      allow write: if hasPermission("roles.manage");
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if hasPermission("tickets.view") && workspaceMatches(resource.data.workspaceId)
+        || (signedIn() && resource.data.requesterId == request.auth.uid)
+        || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("tickets.edit") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /ticketComments/{commentId} {
+      allow read: if hasPermission("tickets.view") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("tickets.comment");
+    }
+
+    match /ticketAttachments/{attachmentId} {
+      allow read: if hasPermission("tickets.view") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("tickets.attach");
+    }
+
+    match /slaPolicies/{policyId} {
+      allow read: if hasPermission("slaPolicies.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("slaPolicies.manage");
+    }
+
+    match /slaEvents/{eventId} {
+      allow read: if hasPermission("slaPolicies.view") || hasPermission("escalations.view");
+      allow write: if false;
+    }
+
+    match /escalations/{escalationId} {
+      allow read: if hasPermission("escalations.view");
+      allow write: if hasPermission("escalations.manage");
+    }
+
+    match /automationRules/{ruleId} {
+      allow read: if hasPermission("automation.view");
+      allow write: if hasPermission("automation.manage");
+    }
+
+    match /automationExecutions/{executionId} {
+      allow read: if hasPermission("automation.view");
+      allow write: if false;
+    }
+
+    match /clients/{clientId} {
+      allow read: if hasPermission("clients.view") && workspaceMatches(resource.data.workspaceId)
+        || portalMatches(clientId);
+      allow write: if hasPermission("clients.update") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /clientContacts/{contactId} {
+      allow read: if hasPermission("contacts.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("contacts.manage");
+    }
+
+    match /clientSites/{siteId} {
+      allow read: if hasPermission("sites.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("sites.manage");
+    }
+
+    match /contracts/{contractId} {
+      allow read: if hasPermission("contracts.view") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("contracts.manage");
+    }
+
+    match /supportAgreements/{agreementId} {
+      allow read: if hasPermission("support_agreements.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("support_agreements.manage");
+    }
+
+    match /billingProfiles/{billingProfileId} {
+      allow read: if hasPermission("billing.view") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("billing.manage");
+    }
+
+    match /clientNotes/{noteId} {
+      allow read: if hasPermission("clients.view") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("clients.update");
+    }
+
+    match /clientFiles/{fileId} {
+      allow read: if hasPermission("client_files.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("client_files.manage");
+    }
+
+    match /portalInvitations/{invitationId} {
+      allow read: if hasPermission("portal_access.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("portal_access.manage");
+    }
+
+    match /portalAccounts/{accountId} {
+      allow read: if hasPermission("portal_access.manage") || portalMatches(resource.data.clientId);
+      allow write: if hasPermission("portal_access.manage");
+    }
+
+    match /assets/{assetId} {
+      allow read: if hasPermission("assets.view") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("assets.create") && workspaceMatches(request.resource.data.workspaceId);
+      allow update: if hasPermission("assets.update")
+        && workspaceMatches(request.resource.data.workspaceId)
+        && request.resource.data.workspaceId == resource.data.workspaceId
+        && request.resource.data.assetTag == resource.data.assetTag
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdById == resource.data.createdById;
+      allow delete: if hasPermission("assets.archive");
+    }
+
+    match /assetTypes/{assetTypeId} {
+      allow read: if hasPermission("assets.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("assetTypes.manage");
+    }
+
+    match /assetAssignments/{assignmentId} {
+      allow read: if hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /assetEvents/{eventId} {
+      allow read: if hasPermission("asset_audit.view") || hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /assetSoftware/{softwareId} {
+      allow read: if hasPermission("asset_software.manage") || hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /softwareLicences/{licenceId} {
+      allow read: if hasPermission("asset_licences.view") || hasPermission("assets.view");
+      allow write: if hasPermission("asset_licences.manage");
+    }
+
+    match /licenceAssignments/{assignmentId} {
+      allow read: if hasPermission("asset_licences.view");
+      allow write: if false;
+    }
+
+    match /assetMaintenance/{maintenanceId} {
+      allow read: if hasPermission("asset_maintenance.manage") || hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /assetWarranties/{warrantyId} {
+      allow read: if hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /assetFiles/{fileId} {
+      allow read: if hasPermission("asset_files.manage") || hasPermission("assets.view");
+      allow write: if hasPermission("asset_files.manage");
+    }
+
+    match /assetImports/{importId} {
+      allow read: if hasPermission("assets.import");
+      allow write: if false;
+    }
+
+    match /assetTagCounters/{counterId} {
+      allow read, write: if false;
+    }
+
+    match /assetHealthSnapshots/{snapshotId} {
+      allow read: if hasPermission("asset_audit.view") || hasPermission("assets.view");
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if signedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if hasPermission("audit.view");
+      allow write: if false;
+    }
+
+    match /settings/{settingId} {
+      allow read: if hasPermission("settings.view");
+      allow write: if hasPermission("settings.manage");
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

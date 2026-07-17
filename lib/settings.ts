@@ -20,6 +20,14 @@ export const defaultSettings = {
     primaryColor: "#0F46B0",
     secondaryColor: "#11386D",
   },
+  emailIntegration: {
+    supportAddress: env.EMAIL_SUPPORT_ADDRESS,
+    provider: env.MAILBOX_PROVIDER,
+    imapHost: env.MAILBOX_IMAP_HOST,
+    imapPort: String(env.MAILBOX_IMAP_PORT),
+    imapUsername: env.MAILBOX_USERNAME,
+    secure: String(env.MAILBOX_SECURE),
+  },
 };
 
 export async function getSettings() {
@@ -66,6 +74,26 @@ export async function getSettings() {
       secondaryColor:
         (map.get("branding.secondaryColor") as string | undefined) ??
         defaultSettings.branding.secondaryColor,
+    },
+    emailIntegration: {
+      supportAddress:
+        (map.get("emailIntegration.supportAddress") as string | undefined) ??
+        defaultSettings.emailIntegration.supportAddress,
+      provider:
+        (map.get("emailIntegration.provider") as string | undefined) ??
+        defaultSettings.emailIntegration.provider,
+      imapHost:
+        (map.get("emailIntegration.imapHost") as string | undefined) ??
+        defaultSettings.emailIntegration.imapHost,
+      imapPort:
+        (map.get("emailIntegration.imapPort") as string | undefined) ??
+        defaultSettings.emailIntegration.imapPort,
+      imapUsername:
+        (map.get("emailIntegration.imapUsername") as string | undefined) ??
+        defaultSettings.emailIntegration.imapUsername,
+      secure:
+        (map.get("emailIntegration.secure") as string | undefined) ??
+        defaultSettings.emailIntegration.secure,
     },
   };
 }

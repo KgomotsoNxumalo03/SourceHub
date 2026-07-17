@@ -38,6 +38,26 @@ export const ticketQueueLabels = {
   unassigned: "Unassigned",
   open: "Open work",
   waiting: "Waiting for customer",
+  overdue: "Overdue",
+  dueToday: "Due today",
+} as const;
+
+export const ticketSlaLabels = {
+  HEALTHY: "Healthy",
+  AT_RISK: "At risk",
+  DUE_SOON: "Due soon",
+  BREACHED: "Breached",
+  PAUSED: "Paused",
+  RESOLVED: "Resolved",
+} as const;
+
+export const ticketSlaTones = {
+  HEALTHY: "success",
+  AT_RISK: "warning",
+  DUE_SOON: "info",
+  BREACHED: "danger",
+  PAUSED: "outline",
+  RESOLVED: "navy",
 } as const;
 
 export const ticketStatusOptions = Object.entries(ticketStatusLabels).map(([value, label]) => ({
@@ -51,6 +71,11 @@ export const ticketPriorityOptions = Object.entries(ticketPriorityLabels).map(([
 }));
 
 export const ticketQueueOptions = Object.entries(ticketQueueLabels).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+export const ticketSlaOptions = Object.entries(ticketSlaLabels).map(([value, label]) => ({
   value,
   label,
 }));
@@ -109,4 +134,32 @@ export function ticketScopeWhere(user: CurrentUser) {
       { createdById: user.id },
     ],
   };
+}
+
+export function ticketSlaTone(state: keyof typeof ticketSlaLabels) {
+  return ticketSlaTones[state];
+}
+
+export function isTicketOverdue(ticket: { resolutionDueAt?: Date | null; status: string }, now = new Date()) {
+  return Boolean(ticket.resolutionDueAt && ticket.resolutionDueAt.getTime() < now.getTime() && !["RESOLVED", "CLOSED"].includes(ticket.status));
+}
+
+export function isTicketDueToday(ticket: { resolutionDueAt?: Date | null }, now = new Date()) {
+  if (!ticket.resolutionDueAt) return false;
+  const due = ticket.resolutionDueAt;
+  return due.toDateString() === now.toDateString();
+}
+
+export function ticketSlaState(ticket: {
+  slaState?: keyof typeof ticketSlaLabels | null;
+  resolutionDueAt?: Date | null;
+  status: string;
+}, now = new Date()) {
+  if (ticket.slaState && ticket.slaState in ticketSlaLabels) {
+    return ticket.slaState;
+  }
+  if (ticket.status === "RESOLVED" || ticket.status === "CLOSED") return "RESOLVED";
+  if (isTicketOverdue(ticket, now)) return "BREACHED";
+  if (isTicketDueToday(ticket, now)) return "DUE_SOON";
+  return "HEALTHY";
 }

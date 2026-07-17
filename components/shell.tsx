@@ -82,6 +82,21 @@ export function AppShell({
           continue;
         }
 
+        if (segment === "service-desk") {
+          items.push({ label: "Service Desk", href: "/service-desk" });
+          continue;
+        }
+
+        if (segment === "clients") {
+          items.push({ label: "Clients", href: "/clients" });
+          continue;
+        }
+
+        if (segment === "assets") {
+          items.push({ label: "Assets", href: "/assets" });
+          continue;
+        }
+
         if (segment === "administration") {
           items.push({ label: "Administration", href: "/administration/users" });
           continue;
@@ -107,6 +122,26 @@ export function AppShell({
           continue;
         }
 
+        if (segment === "asset-types") {
+          items.push({ label: "Asset Types", href: "/administration/asset-types" });
+          continue;
+        }
+
+        if (segment === "sla-policies") {
+          items.push({ label: "SLA Policies", href: "/administration/sla-policies" });
+          continue;
+        }
+
+        if (segment === "automations") {
+          items.push({ label: "Automations", href: "/administration/automations" });
+          continue;
+        }
+
+        if (segment === "email") {
+          items.push({ label: "Email", href: "/administration/email" });
+          continue;
+        }
+
         if (segment === "profile") {
           items.push({ label: "Profile", href: "/profile" });
           continue;
@@ -119,6 +154,16 @@ export function AppShell({
 
         if (segment === "new" && current.startsWith("/tickets")) {
           items.push({ label: "New Ticket", href: "/tickets/new" });
+          continue;
+        }
+
+        if (segment === "new" && current.startsWith("/clients")) {
+          items.push({ label: "New Client", href: "/clients/new" });
+          continue;
+        }
+
+        if (segment === "new" && current.startsWith("/administration/sla-policies")) {
+          items.push({ label: "New SLA Policy", href: "/administration/sla-policies/new" });
           continue;
         }
 

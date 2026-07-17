@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function hasPermission(permission) {
+      return signedIn()
+        && request.auth.token.permissions != null
+        && request.auth.token.permissions.hasAny([permission]);
+    }
+
+    function workspaceMatches(workspaceId) {
+      return signedIn() && request.auth.token.workspaceId == workspaceId;
+    }
+
+    function portalMatches(clientId) {
+      return signedIn()
+        && request.auth.token.portal == true
+        && request.auth.token.clientId == clientId;
+    }
+
+    match /workspaces/{workspaceId}/clients/{clientId}/files/{fileName} {
+      allow read: if hasPermission("client_files.manage") || portalMatches(clientId);
+      allow write: if hasPermission("client_files.manage") && workspaceMatches(workspaceId);
+    }
+
+    match /workspaces/{workspaceId}/assets/{assetId}/{fileName} {
+      allow read: if hasPermission("assets.view") || hasPermission("asset_files.manage");
+      allow write: if hasPermission("asset_files.manage") && workspaceMatches(workspaceId);
+    }
+
+    match /workspaces/{workspaceId}/tickets/{ticketReference}/files/{fileName} {
+      allow read: if hasPermission("tickets.view");
+      allow write: if hasPermission("tickets.attach") && workspaceMatches(workspaceId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
