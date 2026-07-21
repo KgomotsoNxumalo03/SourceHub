@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { requirePermission } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+import { formatMinorUnits } from "@/lib/money";
+import { invoiceStatusLabels, financeStatusTone } from "@/lib/finance-utils";
+import { buttonClassName } from "@/lib/button";
+import { Badge, Card, PageHeader, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "@/components/ui";
+export const dynamic = "force-dynamic";
+export default async function InvoicesPage() { const actor = await requirePermission("invoices.view"); const invoices: any[] = await prisma.invoice.findMany({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID }, orderBy: [{ updatedAt: "desc" }], take: 100 }); return <div className="space-y-6"><PageHeader eyebrow="Finance management" title="Invoices" description="Issue, track, and collect against immutable invoice snapshots." actions={actor.permissions.includes("invoices.create") ? <Link href="/finance/invoices/new" className={buttonClassName({})}><Plus className="h-4 w-4" /> New invoice</Link> : null} />{invoices.length ? <Table><TableHead><TableRow><TableHeadCell>Invoice</TableHeadCell><TableHeadCell>Client</TableHeadCell><TableHeadCell>Status</TableHeadCell><TableHeadCell>Total</TableHeadCell><TableHeadCell>Balance</TableHeadCell><TableHeadCell>Due</TableHeadCell></TableRow></TableHead><TableBody>{invoices.map((invoice) => <TableRow key={invoice.id}><TableCell><Link className="font-semibold text-sourcehub-primary" href={`/finance/invoices/${invoice.id}`}>{invoice.invoiceNumber}</Link></TableCell><TableCell>{invoice.clientNameSnapshot}</TableCell><TableCell><Badge tone={financeStatusTone(invoice.status)}>{invoiceStatusLabels[invoice.status] ?? invoice.status}</Badge></TableCell><TableCell>{formatMinorUnits(Number(invoice.totalMinorUnits), invoice.currency)}</TableCell><TableCell>{formatMinorUnits(Math.max(0, Number(invoice.totalMinorUnits) - Number(invoice.amountPaidMinorUnits ?? 0)), invoice.currency)}</TableCell><TableCell>{new Date(invoice.dueDate).toLocaleDateString("en-ZA")}</TableCell></TableRow>)}</TableBody></Table> : <Card><div className="p-8 text-sm text-slate-600">No invoices yet.</div></Card>}</div>; }

@@ -71,6 +71,15 @@ export function buildClientStoragePath(workspaceId: string, clientId: string, fi
   return buildWorkspaceStoragePath(workspaceId, "clients", clientId, "files", fileName);
 }
 
+export function buildFinanceStoragePath(
+  workspaceId: string,
+  documentType: string,
+  documentId: string,
+  fileName: string,
+) {
+  return buildWorkspaceStoragePath(workspaceId, "finance", documentType, documentId, fileName);
+}
+
 export function validateUpload({
   fileName,
   mimeType,
@@ -114,6 +123,22 @@ async function saveLocally(storagePath: string, buffer: Buffer) {
   await mkdir(dirname(fullPath), { recursive: true });
   await writeFile(fullPath, buffer);
   return `/uploads/${storagePath.replace(/\\/g, "/")}`;
+}
+
+async function saveLocallyPrivate(storagePath: string, buffer: Buffer) {
+  const fullPath = join(process.cwd(), ".sourcehub-private-uploads", ...storagePath.split("/"));
+  await mkdir(dirname(fullPath), { recursive: true });
+  await writeFile(fullPath, buffer);
+  return { storagePath, publicUrl: null, provider: "filesystem" as const };
+}
+
+export async function savePrivateBinaryToStorage({ storagePath, buffer, contentType }: { storagePath: string; buffer: Buffer; contentType: string }) {
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? process.env.FIREBASE_STORAGE_BUCKET ?? "";
+  const shouldUseBucket = Boolean(bucketName) && !process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+  if (!shouldUseBucket) return saveLocallyPrivate(storagePath, buffer);
+  const bucket = getStorage(adminApp).bucket(bucketName);
+  await bucket.file(storagePath).save(buffer, { metadata: { contentType }, resumable: false });
+  return { storagePath, publicUrl: null, provider: "firebase" as const };
 }
 
 export async function saveBinaryToStorage({

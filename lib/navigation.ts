@@ -3,6 +3,8 @@ import {
   Tickets,
   BriefcaseBusiness,
   Boxes,
+  Network,
+  Clock3,
   Users,
   BarChart3,
   ShieldAlert,
@@ -10,6 +12,8 @@ import {
   Gauge,
   Workflow,
   Mail,
+  FolderKanban,
+  ReceiptText,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -18,7 +22,12 @@ export const navigationItems = [
   { label: "Service Desk", href: "/service-desk", icon: Gauge, permission: "technicians.view" },
   { label: "Clients", href: "/clients", icon: BriefcaseBusiness, permission: "clients.view" },
   { label: "Assets", href: "/assets", icon: Boxes, permission: "assets.view" },
-  { label: "Employees", href: "/administration/users", icon: Users, permission: "users.view" },
+  { label: "Network", href: "/network", icon: Network, permission: "networks.view" },
+  { label: "Time & Attendance", href: "/attendance", icon: Clock3, permission: "attendance.view" },
+  { label: "Employees", href: "/employees", icon: Users, permission: "employees.view" },
+  { label: "Projects", href: "/projects", icon: FolderKanban, permission: "projects.view" },
+  { label: "Finance", href: "/finance", icon: ReceiptText, permission: "finance.dashboard.view" },
+  { label: "Administration", href: "/administration/users", icon: Users, permission: "users.view" },
   { label: "SLA Policies", href: "/administration/sla-policies", icon: Workflow, permission: "slaPolicies.view" },
   { label: "Automations", href: "/administration/automations", icon: Workflow, permission: "automation.view" },
   { label: "Email", href: "/administration/email", icon: Mail, permission: "email.view" },

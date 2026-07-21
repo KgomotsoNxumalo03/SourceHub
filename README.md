@@ -51,6 +51,15 @@ Required environment variables:
 - `DEFAULT_TIMEZONE`
 - `DEFAULT_COUNTRY`
 - `DEFAULT_DATE_FORMAT`
+- `ENDPOINT_CREDENTIAL_PEPPER` (server-only secret used to hash endpoint credentials)
+- `ENDPOINT_RATE_LIMIT_PER_MINUTE`
+- `NETWORK_AUDIT_RETENTION_DAYS`
+- `NETWORK_INGESTION_LOG_RETENTION_DAYS`
+- `EMPLOYEE_DOCUMENT_MAX_MB`
+- `EMPLOYEE_CONTRACT_EXPIRY_DAYS`
+- `EMPLOYEE_RETENTION_DAYS`
+- `ATTENDANCE_LOCATION_RETENTION_DAYS`
+- `ATTENDANCE_EVENT_RETENTION_DAYS`
 
 Development-only login defaults:
 
@@ -82,6 +91,69 @@ Production build:
 ```bash
 npm run build
 ```
+
+## Phase 6: Network Management
+
+Network Management is available under `/network`. It links client sites and Phase 5 assets to network environments, registered devices, Windows endpoints, audit history, changes, alerts, tickets, and monitoring policies.
+
+The read-only PowerShell audit script is available at `public/scripts/SourceHub-WindowsAudit.ps1`. It supports Windows PowerShell 5.1 and modern PowerShell where the relevant CIM, networking, security, and registry providers are available:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\SourceHub-WindowsAudit.ps1 -Mode Local -OutputPath .\SourceHub-Audit.json
+```
+
+Upload mode requires a short-lived enrolment token or previously issued endpoint credential. The script never contains Firebase Admin credentials:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\SourceHub-WindowsAudit.ps1 -Mode Upload -SourceHubUrl http://localhost:3000 -EnrollmentToken '<one-time-token>'
+```
+
+The enrolment exchange creates a scoped endpoint identity and a restricted credential. Audit requests are signed with HMAC, timestamped, nonce-protected, idempotent, schema-validated, rate-limited, and recorded in immutable audit collections. Raw audits and endpoint credentials are not writable from the browser.
+
+Firebase deployment requires an authenticated Firebase CLI session. Deploy the rules and indexes before using a deployed project:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project <firebase-project-id>
+npx firebase-tools deploy --only functions --project <firebase-project-id>
+```
+
+For local development, use the Firebase Emulator Suite with the ports in `firebase.json`, then run the idempotent development seed against the emulator environment. Never use the development seed or pepper in production.
+
+Scheduled functions include network offline detection every 15 minutes and retention cleanup daily, in addition to the existing SLA, email, and escalation sweeps. Retention preserves current endpoint snapshots and change evidence linked to open tickets while removing old raw submissions and ingestion logs according to environment settings.
+
+## Phase 7: Employee Management
+
+Employee Management is available under `/employees`. It provides a workspace-scoped directory, employee lifecycle states, organisation structure, contracts, emergency contacts, secure documents, qualifications, training, controlled notes, onboarding, offboarding, and links to assigned assets, endpoints, and service-desk tickets.
+
+Employee records and SourceHub user accounts remain separate. Preboarding records can exist without an account, and account links are expected to be created by a trusted administrator workflow. Protected identity references are masked in ordinary views; compensation, emergency contacts, restricted notes, contracts, and documents require dedicated permissions. Employee document uploads are validated for size, MIME type, and dangerous extensions and are stored in private storage paths rather than public uploads.
+
+The employee expiry function runs daily and creates idempotent notifications for expiring contracts, qualifications, and training. The retention function marks long-archived records for retention review rather than deleting legal, security, or audit evidence. These controls support POPIA-conscious implementation but do not claim legal compliance; retention periods and access roles must be reviewed with the organisation's privacy and legal owners.
+
+Seed fictional employee data locally with `npm run seed`. Deploy the added indexes, Firestore rules, Storage rules, and functions before using the module in a deployed Firebase project:
+
+```bash
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project <firebase-project-id>
+npx firebase-tools deploy --only functions --project <firebase-project-id>
+```
+
+Known limitations: Firebase Authentication account creation, session revocation, document download brokering, malware scanning, and full task-owner notification delivery require a deployed Admin/Functions workflow and are intentionally not performed from the browser. The current local UI records the workflow and security boundary so those integrations can be added without changing the employee data model.
+
+## Phase 8: Time & Attendance
+
+Time & Attendance is available under `/attendance`. It is limited to clock-in, clock-out, breaks, approved work modes, reusable attendance profiles, work locations, work schedules, and attendance exceptions/reports. Attendance events use trusted server timestamps and transaction-backed employee locks so duplicate tabs and retries cannot create overlapping sessions. Location verification is optional and action-scoped; SourceHub does not continuously track location.
+
+The Phase 8 data model intentionally does not implement PulseOne, employee productivity monitoring, idle time, application or website usage, screenshots, keystrokes, mouse activity, browser history, or productivity scoring. `lib/attendance-integration.ts` exposes only a small future boundary for approved attendance summaries, with no telemetry fields.
+
+## Phase 9: Projects and Work Management
+
+Projects are available at `/projects`. The module stores project records, tasks and subtasks, status history, members, milestones, dependencies, time entries, comments, private files, risks, activity history, health snapshots, templates, and ticket/asset links in Firestore. Project and task references use server-owned uniqueness records. Status transitions, dependency-cycle checks, active timer locks, time approval locking, client visibility, and file access are enforced by trusted server actions and Firebase rules.
+
+The project workspace provides a paginated directory, operational dashboard metrics, accessible Kanban board with optimistic rollback, a task timeline/list alternative, milestones, team workload summaries, project time approval, collaboration, risks, private Storage files, and CSV export at `/api/projects/export`. Reusable templates are managed at `/projects/templates` and copy template tasks into independent live records with the template version preserved.
+
+Scheduled Functions recalculate explainable project health and progress every 30 minutes and create idempotent overdue-task notifications. Project time remains separate from attendance. PulseOne integration is intentionally limited to a future source enum and does not add monitoring, idle tracking, screenshots, application tracking, or productivity scoring.
+
+Firebase deployment requires authenticated Firebase CLI access and a configured service account for server-side actions and seed data. Deploy with `npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage,functions --project <firebase-project-id>`. Run `npm run seed` only against the emulator or an approved development project.
 
 ## Folder structure
 
@@ -126,3 +198,18 @@ SourceHub uses database-driven roles and permissions. Permissions are evaluated 
 - Ticket assignment and SLAs
 - Ticket activity timelines
 - Phase 2 operational dashboards
+## Phase 10 finance management
+
+Finance uses Firebase collections and Admin SDK transactions. Monetary authority is stored as integer minor units with server-side VAT, discounts, document totals, payment allocation, and transactional document numbering. The development defaults are ZAR, `en-ZA`, 15% VAT, and 30-day payment terms; this is operational software and does not claim accounting, tax, or SARS compliance.
+
+The finance module includes settings, client billing profiles, quotes and approval, quote-to-invoice conversion, private invoice PDFs, payments and allocations, expenses, suppliers, purchase orders, budgets, audit records, export routes, and scheduled overdue checks. Direct Firestore writes to authoritative finance documents are denied by the client rules; server actions and Functions perform controlled writes.
+
+Run the finance checks with:
+
+```powershell
+npm.cmd run test
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run seed
+```

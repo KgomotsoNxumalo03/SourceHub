@@ -32,9 +32,38 @@ service firebase.storage {
       allow write: if hasPermission("asset_files.manage") && workspaceMatches(workspaceId);
     }
 
+    match /workspaces/{workspaceId}/endpoints/{endpointId}/{fileName} {
+      allow read: if hasPermission("endpoints.view") && workspaceMatches(workspaceId);
+      allow write: if hasPermission("endpoints.audit") && workspaceMatches(workspaceId)
+        && request.resource.size < 4 * 1024 * 1024;
+    }
+
+    match /workspaces/{workspaceId}/employees/{employeeId}/documents/{fileName} {
+      allow read: if workspaceMatches(workspaceId) && hasPermission("employee_documents.view");
+      allow write: if workspaceMatches(workspaceId) && hasPermission("employee_documents.manage")
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches("application/pdf|image/.*|text/plain|application/vnd.openxmlformats-officedocument.*");
+    }
+
     match /workspaces/{workspaceId}/tickets/{ticketReference}/files/{fileName} {
       allow read: if hasPermission("tickets.view");
       allow write: if hasPermission("tickets.attach") && workspaceMatches(workspaceId);
+    }
+
+    match /workspaces/{workspaceId}/projects/{projectId}/{fileName} {
+      allow read: if workspaceMatches(workspaceId) && hasPermission("projects.view")
+        || portalMatches(get(/databases/(default)/documents/projects/$(projectId)).data.clientId)
+          && get(/databases/(default)/documents/projects/$(projectId)).data.clientPortalVisible == true;
+      allow write: if workspaceMatches(workspaceId) && hasPermission("project_files.manage")
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches("image/.*|application/pdf|text/plain|application/zip|application/x-zip-compressed|application/vnd.openxmlformats-officedocument.*");
+    }
+
+    match /workspaces/{workspaceId}/finance/{documentType}/{documentId}/{fileName} {
+      allow read: if workspaceMatches(workspaceId) && hasPermission("financial_documents.view");
+      allow write: if workspaceMatches(workspaceId) && hasPermission("financial_documents.manage")
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches("application/pdf|image/.*|text/plain|application/zip|application/x-zip-compressed|application/vnd.openxmlformats-officedocument.*");
     }
 
     match /{allPaths=**} {

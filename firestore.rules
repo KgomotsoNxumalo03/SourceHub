@@ -22,6 +22,38 @@ service cloud.firestore {
         && request.auth.token.clientId == clientId;
     }
 
+    function canReadNetwork(workspaceId) {
+      return workspaceMatches(workspaceId) && hasPermission("networks.view");
+    }
+
+    function canReadEndpoints(workspaceId) {
+      return workspaceMatches(workspaceId) && hasPermission("endpoints.view");
+    }
+
+    function canReadEmployees(workspaceId) {
+      return workspaceMatches(workspaceId) && hasPermission("employees.view");
+    }
+
+    function canManageEmployees(workspaceId) {
+      return workspaceMatches(workspaceId) && (hasPermission("employees.create") || hasPermission("employees.update") || hasPermission("employees.archive"));
+    }
+
+    function employeeSelf(resourceData) {
+      return signedIn() && resourceData.firebaseUid != null && resourceData.firebaseUid == request.auth.uid;
+    }
+
+    function canReadAttendance(workspaceId) {
+      return workspaceMatches(workspaceId) && hasPermission("attendance.view");
+    }
+
+    function canReadFinance(workspaceId) {
+      return workspaceMatches(workspaceId) && (
+        hasPermission("finance.dashboard.view") || hasPermission("finance.reports.view") ||
+        hasPermission("quotes.view") || hasPermission("invoices.view") || hasPermission("payments.view") ||
+        hasPermission("expenses.view") || hasPermission("suppliers.view") || hasPermission("budgets.view")
+      );
+    }
+
     match /workspaces/{workspaceId} {
       allow read: if workspaceMatches(workspaceId) || hasPermission("workspaces.manage");
       allow write: if hasPermission("workspaces.manage");
@@ -30,6 +62,290 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if hasPermission("users.view") && workspaceMatches(resource.data.workspaceId);
       allow write: if hasPermission("users.edit") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employees/{employeeId} {
+      allow read: if canReadEmployees(resource.data.workspaceId) || employeeSelf(resource.data);
+      allow create: if hasPermission("employees.create") && workspaceMatches(request.resource.data.workspaceId);
+      allow update: if canManageEmployees(resource.data.workspaceId)
+        && request.resource.data.workspaceId == resource.data.workspaceId
+        && request.resource.data.employeeNumber == resource.data.employeeNumber
+        && request.resource.data.workEmail == resource.data.workEmail
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.accountState == resource.data.accountState
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    match /departments/{departmentId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("departments.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /teams/{teamId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("teams.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /jobTitles/{jobTitleId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("job_titles.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeContracts/{contractId} {
+      allow read: if hasPermission("employee_contracts.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("employee_contracts.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeDocuments/{documentId} {
+      allow read: if hasPermission("employee_documents.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("employee_documents.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeEmergencyContacts/{contactId} {
+      allow read: if hasPermission("employee_emergency_contacts.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if hasPermission("employee_emergency_contacts.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeQualifications/{qualificationId} {
+      allow read, update, delete: if hasPermission("employee_qualifications.manage") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("employee_qualifications.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeTraining/{trainingId} {
+      allow read, update, delete: if hasPermission("employee_training.manage") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("employee_training.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /onboardingTemplates/{templateId} {
+      allow read, update, delete: if hasPermission("onboarding.manage") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("onboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /onboardingWorkflows/{workflowId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("onboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /onboardingTasks/{taskId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("onboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /offboardingTemplates/{templateId} {
+      allow read, update, delete: if hasPermission("offboarding.manage") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("offboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /offboardingWorkflows/{workflowId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("offboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /offboardingTasks/{taskId} {
+      allow read: if canReadEmployees(resource.data.workspaceId);
+      allow write: if hasPermission("offboarding.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /employeeNotes/{noteId} {
+      allow read: if hasPermission("employee_notes.view") && workspaceMatches(resource.data.workspaceId);
+      allow create: if hasPermission("employee_notes.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow update, delete: if hasPermission("employee_notes.manage") && workspaceMatches(resource.data.workspaceId);
+    }
+
+    match /employeeActivities/{activityId} {
+      allow read: if hasPermission("employee_audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /employeeStatusHistory/{historyId} {
+      allow read: if hasPermission("employee_audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /employeeManagerHistory/{historyId} {
+      allow read: if hasPermission("employee_audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /employeeUniqueness/{key} {
+      allow read, write: if false;
+    }
+
+    match /attendanceProfiles/{profileId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow create: if hasPermission("attendance.profiles.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow update, delete: if hasPermission("attendance.profiles.manage") && workspaceMatches(resource.data.workspaceId);
+    }
+
+    match /workLocations/{locationId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow create: if hasPermission("attendance.locations.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow update, delete: if hasPermission("attendance.locations.manage") && workspaceMatches(resource.data.workspaceId);
+    }
+
+    match /workSchedules/{scheduleId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow create: if hasPermission("attendance.schedules.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow update, delete: if hasPermission("attendance.schedules.manage") && workspaceMatches(resource.data.workspaceId);
+    }
+
+    match /attendanceAssignments/{assignmentId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if hasPermission("attendance.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /attendanceEvents/{eventId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /attendanceSessions/{sessionId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /attendanceBreaks/{breakId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /attendanceExceptions/{exceptionId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow create: if hasPermission("attendance.exceptions.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow update: if hasPermission("attendance.approve") && workspaceMatches(resource.data.workspaceId);
+      allow delete: if false;
+    }
+
+    match /attendanceApprovals/{approvalId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if hasPermission("attendance.approve") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /timesheets/{timesheetId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if hasPermission("attendance.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /overtimeRequests/{requestId} {
+      allow read: if canReadAttendance(resource.data.workspaceId);
+      allow write: if hasPermission("attendance.approve") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /attendanceIdempotency/{key} {
+      allow read, write: if false;
+    }
+
+    match /attendanceLocks/{key} {
+      allow read, write: if false;
+    }
+
+    function canReadProject(projectData) {
+      return workspaceMatches(projectData.workspaceId) && hasPermission("projects.view");
+    }
+
+    function canReadClientProject(projectData) {
+      return portalMatches(projectData.clientId) && projectData.clientPortalVisible == true;
+    }
+
+    match /projects/{projectId} {
+      allow read: if canReadProject(resource.data) || canReadClientProject(resource.data);
+      allow write: if false;
+    }
+
+    match /projectTasks/{taskId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_tasks.view");
+      allow write: if false;
+    }
+
+    match /projectMembers/{memberId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
+    }
+
+    match /projectMilestones/{milestoneId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view")
+        || canReadClientProject(get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data) && resource.data.clientVisible == true;
+      allow write: if false;
+    }
+
+    match /projectComments/{commentId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view")
+        || canReadClientProject(get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data) && resource.data.visibility == "CLIENT_VISIBLE";
+      allow write: if false;
+    }
+
+    match /projectFiles/{fileId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view")
+        || canReadClientProject(get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data) && resource.data.clientVisible == true;
+      allow write: if false;
+    }
+
+    match /projectTimeEntries/{entryId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_time.view");
+      allow write: if false;
+    }
+
+    match /projectRisks/{riskId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_risks.manage");
+      allow write: if false;
+    }
+
+    match /projectTaskDependencies/{dependencyId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_tasks.view");
+      allow write: if false;
+    }
+
+    match /projectStatusHistory/{historyId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
+    }
+
+    match /projectTaskStatusHistory/{historyId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_tasks.view");
+      allow write: if false;
+    }
+
+    match /projectActivities/{activityId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
+    }
+
+    match /projectHealthSnapshots/{snapshotId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
+    }
+
+    match /projectTemplates/{templateId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (hasPermission("projects.view") || hasPermission("project_templates.manage"));
+      allow write: if hasPermission("project_templates.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /projectTemplateTasks/{taskId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("project_templates.manage");
+      allow write: if hasPermission("project_templates.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /projectUniqueness/{key} {
+      allow read, write: if false;
+    }
+
+    match /projectTaskUniqueness/{key} {
+      allow read, write: if false;
+    }
+
+    match /projectTimerLocks/{key} {
+      allow read, write: if false;
+    }
+
+    match /projectTicketLinks/{linkId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
+    }
+
+    match /projectAssetLinks/{linkId} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("projects.view");
+      allow write: if false;
     }
 
     match /roles/{roleId} {
@@ -206,6 +522,104 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /networkEnvironments/{environmentId} {
+      allow read: if canReadNetwork(resource.data.workspaceId);
+      allow create: if hasPermission("networks.create") && workspaceMatches(request.resource.data.workspaceId);
+      allow update: if hasPermission("networks.update")
+        && workspaceMatches(resource.data.workspaceId)
+        && request.resource.data.workspaceId == resource.data.workspaceId
+        && request.resource.data.clientId == resource.data.clientId
+        && request.resource.data.siteId == resource.data.siteId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdById == resource.data.createdById;
+      allow delete: if false;
+    }
+
+    match /networkDevices/{deviceId} {
+      allow read: if canReadNetwork(resource.data.workspaceId);
+      allow create, update: if hasPermission("network_devices.manage") && workspaceMatches(request.resource.data.workspaceId);
+      allow delete: if false;
+    }
+
+    match /endpoints/{endpointId} {
+      allow read: if canReadEndpoints(resource.data.workspaceId);
+      allow create, update, delete: if false;
+    }
+
+    match /endpointEnrollments/{enrollmentId} {
+      allow read: if hasPermission("endpoints.enrol") && workspaceMatches(resource.data.workspaceId);
+      allow create, update, delete: if false;
+    }
+
+    match /endpointCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+
+    match /endpointAudits/{auditId} {
+      allow read: if hasPermission("endpoint_raw_audits.view") && workspaceMatches(resource.data.workspaceId);
+      allow create, update, delete: if false;
+    }
+
+    match /endpointSnapshots/{snapshotId} {
+      allow read: if canReadEndpoints(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /endpointChanges/{changeId} {
+      allow read: if canReadEndpoints(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /networkAlerts/{alertId} {
+      allow read: if hasPermission("network_alerts.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /networkAlertEvents/{eventId} {
+      allow read: if hasPermission("network_alerts.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /monitoringPolicies/{policyId} {
+      allow read: if canReadNetwork(resource.data.workspaceId);
+      allow write: if hasPermission("monitoring_policies.manage") && workspaceMatches(request.resource.data.workspaceId);
+    }
+
+    match /auditIngestionLogs/{logId} {
+      allow read: if hasPermission("endpoint_raw_audits.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /endpointCommands/{commandId} {
+      allow read: if hasPermission("endpoints.audit") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /endpointCommandResults/{resultId} {
+      allow read: if hasPermission("endpoints.audit") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /endpointRateLimits/{rateLimitId} {
+      allow read, write: if false;
+    }
+
+    match /endpointNonces/{nonceId} {
+      allow read, write: if false;
+    }
+
+    match /networkSavedViews/{viewId} {
+      allow read: if hasPermission("endpoints.view") && workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid;
+      allow create: if hasPermission("endpoints.view") && workspaceMatches(request.resource.data.workspaceId) && request.resource.data.userId == request.auth.uid;
+      allow update: if hasPermission("endpoints.view") && workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if hasPermission("endpoints.view") && workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid;
+    }
+
+    match /networkRetentionRuns/{runId} {
+      allow read: if hasPermission("audit.view");
+      allow write: if false;
+    }
+
     match /notifications/{notificationId} {
       allow read, write: if signedIn() && request.auth.uid == resource.data.userId;
     }
@@ -218,6 +632,74 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if hasPermission("settings.view");
       allow write: if hasPermission("settings.manage");
+    }
+
+    match /financeSettings/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("finance.settings.manage");
+      allow write: if false;
+    }
+    match /clientBillingProfiles/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("finance.settings.manage");
+      allow write: if false;
+    }
+    match /quotes/{id} {
+      allow read: if canReadFinance(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /invoices/{id} {
+      allow read: if canReadFinance(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /creditNotes/{id} {
+      allow read: if canReadFinance(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /payments/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("payments.view");
+      allow write: if false;
+    }
+    match /paymentAllocations/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("payments.view");
+      allow write: if false;
+    }
+    match /expenses/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("expenses.view");
+      allow write: if false;
+    }
+    match /suppliers/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("suppliers.view");
+      allow write: if false;
+    }
+    match /purchaseOrders/{id} {
+      allow read: if canReadFinance(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /purchaseReceipts/{id} {
+      allow read: if canReadFinance(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /budgets/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("budgets.view");
+      allow write: if false;
+    }
+    match /financialApprovals/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("financial_audit.view");
+      allow write: if false;
+    }
+    match /financialDocuments/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("financial_documents.view");
+      allow write: if false;
+    }
+    match /financialActivities/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("financial_audit.view");
+      allow write: if false;
+    }
+    match /financialExports/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("finance.exports.create");
+      allow write: if false;
+    }
+    match /financialNumberCounters/{id} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

@@ -87,6 +87,56 @@ export function AppShell({
           continue;
         }
 
+        if (segment === "network") {
+          items.push({ label: "Network Management", href: "/network" });
+          continue;
+        }
+
+        if (segment === "employees") {
+          items.push({ label: "Employees", href: "/employees" });
+          continue;
+        }
+
+        if (segment === "attendance") {
+          items.push({ label: "Time & Attendance", href: "/attendance" });
+          continue;
+        }
+
+        if (segment === "projects") {
+          items.push({ label: "Projects", href: "/projects" });
+          continue;
+        }
+
+        if (segment === "finance") {
+          items.push({ label: "Finance", href: "/finance" });
+          continue;
+        }
+
+        if (segment === "environments") {
+          items.push({ label: "Environments", href: "/network/environments" });
+          continue;
+        }
+
+        if (segment === "endpoints") {
+          items.push({ label: "Endpoints", href: "/network/endpoints" });
+          continue;
+        }
+
+        if (segment === "devices") {
+          items.push({ label: "Devices", href: "/network/devices" });
+          continue;
+        }
+
+        if (segment === "alerts") {
+          items.push({ label: "Alerts", href: "/network/alerts" });
+          continue;
+        }
+
+        if (segment === "policies") {
+          items.push({ label: "Policies", href: "/network/policies" });
+          continue;
+        }
+
         if (segment === "clients") {
           items.push({ label: "Clients", href: "/clients" });
           continue;

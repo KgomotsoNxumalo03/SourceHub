@@ -28,6 +28,16 @@
       ]
     },
     {
+      "collectionGroup": "tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "resolutionDueAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "clients",
       "queryScope": "COLLECTION",
       "fields": [
@@ -62,6 +72,15 @@
         { "fieldPath": "clientId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "endDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "contracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "endDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -122,6 +141,14 @@
       "fields": [
         { "fieldPath": "workspaceId", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "assets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "warrantyExpiryDate", "order": "ASCENDING" }
       ]
     },
     {
@@ -259,7 +286,300 @@
         { "fieldPath": "active", "order": "ASCENDING" },
         { "fieldPath": "name", "order": "ASCENDING" }
       ]
-    }
+    },
+    {
+      "collectionGroup": "networkEnvironments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkEnvironments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "siteId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkEnvironments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "monitoringState", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkEnvironments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "searchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkDevices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "networkEnvironmentId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "siteId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "healthState", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "complianceState", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "checkInState", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "searchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpointEnrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpointAudits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "endpointId", "order": "ASCENDING" },
+        { "fieldPath": "auditTimestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "endpointChanges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "endpointId", "order": "ASCENDING" },
+        { "fieldPath": "detectedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkAlerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "lastDetectedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkAlerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "endpointId", "order": "ASCENDING" },
+        { "fieldPath": "lastDetectedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkAlertEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "alertId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "monitoringPolicies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "scopeType", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "networkSavedViews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "workspaceId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "employees",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "lastName", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "employees",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "departmentId", "order": "ASCENDING" }, { "fieldPath": "lastName", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "employeeContracts",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "endDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "employeeQualifications",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "expiryDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "employeeTraining",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "completionStatus", "order": "ASCENDING" }, { "fieldPath": "dueDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "onboardingWorkflows",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "startedAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "offboardingWorkflows",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "scheduledDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "attendanceProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "workLocations",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "workSchedules",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }, { "fieldPath": "effectiveStartDate", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "attendanceEvents",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "employeeId", "order": "ASCENDING" }, { "fieldPath": "serverTimestamp", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "attendanceSessions",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "employeeId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "startedAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "attendanceBreaks",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "employeeId", "order": "ASCENDING" }, { "fieldPath": "startedAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "attendanceExceptions",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "timesheets",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "employeeId", "order": "ASCENDING" }, { "fieldPath": "periodStart", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projects",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projects",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "healthState", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projectTasks",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "dueDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "projectTasks",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "assigneeId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "projectMilestones",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "plannedDate", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "projectTimeEntries",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projectRisks",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projectActivities",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "projectMembers",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "projectId", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }]
+    },
+    { "collectionGroup": "quotes", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "invoices", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "dueDate", "order": "ASCENDING" }] },
+    { "collectionGroup": "invoices", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "payments", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "paymentDate", "order": "DESCENDING" }] },
+    { "collectionGroup": "expenses", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expenseDate", "order": "DESCENDING" }] },
+    { "collectionGroup": "purchaseOrders", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "budgets", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "periodStart", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }

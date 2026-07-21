@@ -1,16 +1,14 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/db";
 import { getSessionToken, hashToken } from "@/lib/session";
 import { hasPermission, hasRole, type CurrentUser } from "@/lib/permissions";
+import { cache } from "react";
 
-async function getSessionRecord() {
-  const token = await getSessionToken();
-  if (!token) return null;
-
-  const tokenHash = hashToken(token);
+async function getSessionRecordByHash(tokenHash: string) {
   const session = await prisma.session.findUnique({
     where: { tokenHash },
     include: {
@@ -34,20 +32,23 @@ async function getSessionRecord() {
     },
   });
 
-  if (!session) return null;
-
-  if (session.revokedAt || session.expiresAt < new Date()) {
-    return null;
-  }
-
-  if (session.user.status !== "ACTIVE") {
-    return null;
-  }
-
+  if (!session || session.revokedAt || session.expiresAt < new Date() || session.user.status !== "ACTIVE") return null;
   return session;
 }
 
-export async function currentUser(): Promise<CurrentUser | null> {
+async function getSessionRecord() {
+  const token = await getSessionToken();
+  if (!token) return null;
+
+  const tokenHash = hashToken(token);
+  return unstable_cache(
+    () => getSessionRecordByHash(tokenHash),
+    ["sourcehub-session", tokenHash],
+    { revalidate: 10 },
+  )();
+}
+
+async function resolveCurrentUser(): Promise<CurrentUser | null> {
   const session = await getSessionRecord();
   if (!session) return null;
 
@@ -88,6 +89,9 @@ export async function currentUser(): Promise<CurrentUser | null> {
     permissions: Array.from(permissions),
   };
 }
+
+// Deduplicate the session and role graph lookup across the app layout and page.
+export const currentUser = cache(resolveCurrentUser);
 
 export async function requireAuth() {
   const user = await currentUser();

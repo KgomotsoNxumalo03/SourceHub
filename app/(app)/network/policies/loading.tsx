@@ -1,0 +1,1 @@
+export default function NetworkPoliciesLoading() { return <div className="space-y-6 animate-pulse"><div className="h-24 rounded-3xl bg-slate-200" /><div className="h-[38rem] rounded-3xl bg-slate-200" /></div>; }

@@ -1,6 +1,8 @@
 .next
 node_modules
 dist
+functions/lib
+.sourcehub-private-uploads
 coverage
 .agents
 .env

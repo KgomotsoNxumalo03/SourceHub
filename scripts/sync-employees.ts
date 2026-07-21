@@ -11,6 +11,10 @@ async function main() {
 
   for (const document of snapshot.docs) {
     const employee = document.data();
+    // Phase 7 supports preboarding records without accounts. Only sync legacy
+    // records that explicitly carry an email or an existing account link.
+    const email = String(employee.workEmail ?? employee.email ?? "").trim().toLowerCase();
+    if ((!email && !employee.userId) || (employee.accountState === "NOT_LINKED" && !employee.userId)) continue;
     const existing = await db.user.findUnique({
       where: { employeeNumber: employee.employeeNumber },
     });
@@ -21,10 +25,10 @@ async function main() {
           data: {
             firstName: employee.firstName,
             lastName: employee.lastName,
-            email: employee.email,
-            phone: employee.phone ?? null,
+            email,
+            phone: employee.mobileNumber ?? employee.phone ?? null,
             jobTitle: employee.jobTitle ?? null,
-            department: employee.department ?? null,
+            department: employee.departmentName ?? employee.department ?? null,
             status: employee.status ?? "ACTIVE",
           },
         })
@@ -33,11 +37,11 @@ async function main() {
             employeeNumber: employee.employeeNumber,
             firstName: employee.firstName,
             lastName: employee.lastName,
-            email: employee.email,
+            email,
             passwordHash: null,
-            phone: employee.phone ?? null,
+            phone: employee.mobileNumber ?? employee.phone ?? null,
             jobTitle: employee.jobTitle ?? null,
-            department: employee.department ?? null,
+            department: employee.departmentName ?? employee.department ?? null,
             profileImageUrl: null,
             status: employee.status ?? "ACTIVE",
           },
@@ -49,6 +53,11 @@ async function main() {
     if (!assignment) {
       await db.userRole.create({ data: { userId: user.id, roleId: employeeRole.id } });
     }
+    await firestoreAdmin.collection("employees").doc(document.id).set({
+      userId: user.id,
+      accountState: employee.accountState === "DISABLED" ? "DISABLED" : "ACTIVE",
+      updatedAt: new Date(),
+    }, { merge: true });
     synced += 1;
   }
 

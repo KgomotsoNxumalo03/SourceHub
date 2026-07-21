@@ -33,6 +33,39 @@ const collections = {
   notification: "notifications",
   setting: "settings",
   ticketCategory: "ticketCategories",
+  employee: "employees",
+  department: "departments",
+  team: "teams",
+  jobTitle: "jobTitles",
+  employeeContract: "employeeContracts",
+  employeeDocument: "employeeDocuments",
+  employeeEmergencyContact: "employeeEmergencyContacts",
+  employeeQualification: "employeeQualifications",
+  employeeTraining: "employeeTraining",
+  onboardingTemplate: "onboardingTemplates",
+  onboardingWorkflow: "onboardingWorkflows",
+  onboardingTask: "onboardingTasks",
+  offboardingTemplate: "offboardingTemplates",
+  offboardingWorkflow: "offboardingWorkflows",
+  offboardingTask: "offboardingTasks",
+  employeeNote: "employeeNotes",
+  employeeActivity: "employeeActivities",
+  employeeStatusHistory: "employeeStatusHistory",
+  employeeManagerHistory: "employeeManagerHistory",
+  employeeUniqueness: "employeeUniqueness",
+  attendanceProfile: "attendanceProfiles",
+  workLocation: "workLocations",
+  workSchedule: "workSchedules",
+  attendanceAssignment: "attendanceAssignments",
+  attendanceEvent: "attendanceEvents",
+  attendanceSession: "attendanceSessions",
+  attendanceBreak: "attendanceBreaks",
+  attendanceException: "attendanceExceptions",
+  attendanceApproval: "attendanceApprovals",
+  attendanceIdempotency: "attendanceIdempotency",
+  attendanceLock: "attendanceLocks",
+  timesheet: "timesheets",
+  overtimeRequest: "overtimeRequests",
   ticketSequence: "ticketSequences",
   ticket: "tickets",
   ticketComment: "ticketComments",
@@ -61,6 +94,24 @@ const collections = {
   assetImport: "assetImports",
   assetTagCounter: "assetTagCounters",
   assetHealthSnapshot: "assetHealthSnapshots",
+  networkEnvironment: "networkEnvironments",
+  networkDevice: "networkDevices",
+  endpoint: "endpoints",
+  endpointEnrollment: "endpointEnrollments",
+  endpointCredential: "endpointCredentials",
+  endpointAudit: "endpointAudits",
+  endpointSnapshot: "endpointSnapshots",
+  endpointChange: "endpointChanges",
+  networkAlert: "networkAlerts",
+  networkAlertEvent: "networkAlertEvents",
+  monitoringPolicy: "monitoringPolicies",
+  auditIngestionLog: "auditIngestionLogs",
+  endpointCommand: "endpointCommands",
+  endpointCommandResult: "endpointCommandResults",
+  endpointRateLimit: "endpointRateLimits",
+  endpointNonce: "endpointNonces",
+  networkSavedView: "networkSavedViews",
+  networkRetentionRun: "networkRetentionRuns",
   workspace: "workspaces",
   client: "clients",
   clientContact: "clientContacts",
@@ -75,6 +126,57 @@ const collections = {
   businessHour: "businessHours",
   publicHoliday: "publicHolidays",
   technicianQueue: "technicianQueues",
+  project: "projects",
+  projectUniqueness: "projectUniqueness",
+  projectStatusHistory: "projectStatusHistory",
+  projectMember: "projectMembers",
+  projectTask: "projectTasks",
+  projectTaskUniqueness: "projectTaskUniqueness",
+  projectTaskStatusHistory: "projectTaskStatusHistory",
+  projectTaskDependency: "projectTaskDependencies",
+  projectMilestone: "projectMilestones",
+  projectTimeEntry: "projectTimeEntries",
+  projectTimerLock: "projectTimerLocks",
+  projectComment: "projectComments",
+  projectCommentEdit: "projectCommentEdits",
+  projectFile: "projectFiles",
+  projectRisk: "projectRisks",
+  projectActivity: "projectActivities",
+  projectHealthSnapshot: "projectHealthSnapshots",
+  projectTemplate: "projectTemplates",
+  projectTemplateTask: "projectTemplateTasks",
+  projectSavedView: "projectSavedViews",
+  projectTicketLink: "projectTicketLinks",
+  projectAssetLink: "projectAssetLinks",
+  projectAutomationExecution: "projectAutomationExecutions",
+  financeSetting: "financeSettings",
+  clientBillingProfile: "clientBillingProfiles",
+  quote: "quotes",
+  quoteUniqueness: "quoteUniqueness",
+  quoteRevision: "quoteRevisions",
+  invoice: "invoices",
+  invoiceUniqueness: "invoiceUniqueness",
+  recurringInvoiceTemplate: "recurringInvoiceTemplates",
+  recurringInvoiceRun: "recurringInvoiceRuns",
+  creditNote: "creditNotes",
+  creditNoteUniqueness: "creditNoteUniqueness",
+  payment: "payments",
+  paymentUniqueness: "paymentUniqueness",
+  paymentAllocation: "paymentAllocations",
+  expense: "expenses",
+  expenseUniqueness: "expenseUniqueness",
+  supplier: "suppliers",
+  supplierUniqueness: "supplierUniqueness",
+  purchaseOrder: "purchaseOrders",
+  purchaseOrderUniqueness: "purchaseOrderUniqueness",
+  purchaseReceipt: "purchaseReceipts",
+  budget: "budgets",
+  budgetRevision: "budgetRevisions",
+  financialApproval: "financialApprovals",
+  financialDocument: "financialDocuments",
+  financialActivity: "financialActivities",
+  financialExport: "financialExports",
+  financialNumberCounter: "financialNumberCounters",
 } as const;
 
 function convertValue(value: any): any {
@@ -131,6 +233,10 @@ async function rawMany(model: keyof typeof collections, args: RecordData = {}) {
     query = query.orderBy(field, direction);
   }
   if (args.skip) query = query.offset(args.skip);
+  if (args.cursor?.id) {
+    const cursorDocument = await firestoreAdmin.collection(collections[model]).doc(args.cursor.id).get();
+    if (cursorDocument.exists) query = query.startAfter(cursorDocument);
+  }
   if (args.take != null) query = query.limit(args.take);
   try {
     const snapshot = await query.get();
@@ -246,12 +352,21 @@ async function hydrate(model: keyof typeof collections, record: RecordData, incl
     record.createdBy = users.find((item) => item.id === record.createdById) ?? null;
     record.updatedBy = users.find((item) => item.id === record.updatedById) ?? null;
     record.category = categories.find((item) => item.id === record.categoryId) ?? null;
-    const [clients, agreements, policies, assets] = await Promise.all([raw("client"), raw("supportAgreement"), raw("slaPolicy"), raw("asset")]);
+    const [clients, agreements, policies, assets, endpoints, networkAlerts] = await Promise.all([
+      raw("client"),
+      raw("supportAgreement"),
+      raw("slaPolicy"),
+      raw("asset"),
+      raw("endpoint"),
+      raw("networkAlert"),
+    ]);
     record.client = clients.find((item) => item.id === record.clientId) ?? null;
     record.site = (await raw("clientSite")).find((item) => item.id === record.siteId) ?? null;
     record.supportAgreement = agreements.find((item) => item.id === record.supportAgreementId) ?? null;
     record.slaPolicy = policies.find((item) => item.id === record.slaPolicyId) ?? null;
     record.asset = assets.find((item) => item.id === record.assetId) ?? null;
+    record.endpoint = endpoints.find((item) => item.id === record.endpointId) ?? null;
+    record.networkAlert = networkAlerts.find((item) => item.id === record.networkAlertId) ?? null;
     record.comments = comments.filter((item) => item.ticketId === record.id).map((item) => ({
       ...item,
       author: users.find((user) => user.id === item.authorId) ?? null,
@@ -331,6 +446,10 @@ function repository(model: keyof typeof collections) {
       if (queried === null) {
         records = records.filter((record) => matches(record, args.where));
         sortRecords(records, args.orderBy);
+        if (args.cursor?.id) {
+          const cursorIndex = records.findIndex((record) => record.id === args.cursor.id);
+          if (cursorIndex >= 0) records = records.slice(cursorIndex + 1);
+        }
         if (args.skip) records = records.slice(args.skip);
         if (args.take != null) records = records.slice(0, args.take);
       }
@@ -357,7 +476,12 @@ function repository(model: keyof typeof collections) {
       if (clauses !== null) {
         let query: FirebaseFirestore.Query = collection;
         for (const [field, operator, value] of clauses) query = query.where(field, operator, value);
-        return (await query.count().get()).data().count;
+        try {
+          return (await query.count().get()).data().count;
+        } catch (error: any) {
+          // Keep dashboards usable while a newly declared composite index is building.
+          if (error?.code !== 9 && error?.code !== "failed-precondition") throw error;
+        }
       }
       return (await this.findMany({ where: args.where })).length;
     },
