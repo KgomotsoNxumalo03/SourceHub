@@ -1,6 +1,7 @@
 import { logger } from "firebase-functions";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -341,4 +342,90 @@ export const runScheduledKnowledgeLinkChecks = onSchedule("every day 07:15", asy
   }
   await db.collection("knowledgeJobRuns").doc(`links-${new Date().toISOString().slice(0, 10)}`).set({ job: "link-checks", status: "COMPLETED", checked, createdAt: FieldValue.serverTimestamp() }, { merge: true });
   logger.info("Scheduled knowledge link sweep", { articles: articles.size, checked });
+});
+
+type ReportingClause = [string, FirebaseFirestore.WhereFilterOp, unknown];
+async function reportingRecords(collection: string, workspaceId: string, clauses: ReportingClause[] = [], limit = 10000): Promise<any[]> {
+  let query: FirebaseFirestore.Query = db.collection(collection).where("workspaceId", "==", workspaceId);
+  for (const [field, operator, value] of clauses) query = query.where(field, operator, value);
+  return (await query.limit(limit).get()).docs.map((document) => ({ id: document.id, ...document.data() }));
+}
+async function reportingCount(collection: string, workspaceId: string, clauses: ReportingClause[] = []) { return (await reportingRecords(collection, workspaceId, clauses)).length; }
+function reportingSum(records: FirebaseFirestore.DocumentData[], field: string) { return records.reduce((sum, record) => sum + Number(record[field] ?? 0), 0); }
+function reportingGroups(records: FirebaseFirestore.DocumentData[], field: string) { const groups: Record<string, number> = {}; for (const record of records) { const key = String(record[field] ?? "Unassigned"); groups[key] = (groups[key] ?? 0) + 1; } return groups; }
+function reportingCsvCell(value: unknown) { const text = String(value ?? ""); const safe = /^[=+\-@]/.test(text) ? `'${text}` : text; return `"${safe.replaceAll('"', '""')}"`; }
+function nextReportRun(now: Date, frequency: string) { const next = new Date(now); if (frequency === "WEEKLY") next.setDate(next.getDate() + 7); else if (frequency === "MONTHLY") next.setMonth(next.getMonth() + 1); else if (frequency === "QUARTERLY") next.setMonth(next.getMonth() + 3); else next.setDate(next.getDate() + 1); return next; }
+
+async function writeReportingArea(workspaceId: string, area: string, metrics: Record<string, number>, sourceCollections: string[], generatedAt: Date, snapshot = false) {
+  const periodKey = generatedAt.toISOString().slice(0, 10);
+  const aggregateId = `${workspaceId}:${area}:current`;
+  const payload = { workspaceId, area, metricKey: `${area}.summary`, metrics, sourceCollections, calculationVersion: 1, periodStart: new Date(generatedAt.getFullYear(), generatedAt.getMonth(), generatedAt.getDate()), periodEnd: new Date(generatedAt.getFullYear(), generatedAt.getMonth(), generatedAt.getDate() + 1), periodKey, generatedAt: FieldValue.serverTimestamp(), dataFreshness: "CURRENT", updatedAt: FieldValue.serverTimestamp() };
+  await db.collection("reportingAggregates").doc(aggregateId).set(payload, { merge: true });
+  if (snapshot) await db.collection("reportingSnapshots").doc(`${workspaceId}:${area}:day:${periodKey}`).set({ ...payload, id: `${workspaceId}:${area}:day:${periodKey}`, generatedBy: "scheduled-reporting-aggregation", snapshotType: "DAILY", createdAt: FieldValue.serverTimestamp() }, { merge: true });
+}
+
+async function aggregateReportingWorkspace(workspaceId: string, snapshot: boolean) {
+  const now = new Date();
+  const [tickets, clients, assets, endpoints, employees, projects, invoices, payments, knowledge, audits, exceptions] = await Promise.all([
+    reportingRecords("tickets", workspaceId), reportingRecords("clients", workspaceId), reportingRecords("assets", workspaceId), reportingRecords("endpoints", workspaceId), reportingRecords("employees", workspaceId), reportingRecords("projects", workspaceId), reportingRecords("invoices", workspaceId), reportingRecords("payments", workspaceId), reportingRecords("knowledgeArticles", workspaceId), reportingRecords("auditLogs", workspaceId), reportingRecords("attendanceExceptions", workspaceId),
+  ]);
+  const common = { openTickets: tickets.filter((item) => !["RESOLVED", "CLOSED"].includes(String(item.status))).length, criticalTickets: tickets.filter((item) => item.priority === "URGENT").length, activeClients: clients.filter((item) => item.status === "ACTIVE").length, onboardingClients: clients.filter((item) => item.status === "ONBOARDING").length, managedAssets: assets.length, healthyAssets: assets.filter((item) => item.healthState === "HEALTHY").length, atRiskAssets: assets.filter((item) => ["AT_RISK", "CRITICAL"].includes(String(item.healthState))).length, managedEndpoints: endpoints.length, offlineEndpoints: endpoints.filter((item) => item.checkInState === "OFFLINE").length, compliantEndpoints: endpoints.filter((item) => item.complianceState === "COMPLIANT").length, activeEmployees: employees.filter((item) => item.status === "ACTIVE").length, activeProjects: projects.filter((item) => ["ACTIVE", "APPROVED", "ON_HOLD"].includes(String(item.status))).length, atRiskProjects: projects.filter((item) => ["AT_RISK", "CRITICAL"].includes(String(item.healthState))).length, publishedArticles: knowledge.filter((item) => item.status === "PUBLISHED").length, articlesInReview: knowledge.filter((item) => item.status === "IN_REVIEW").length, openAttendanceExceptions: exceptions.filter((item) => item.status === "OPEN").length, auditEvents: audits.length };
+  const activeInvoices = invoices.filter((item) => !["DRAFT", "VOID", "CANCELLED"].includes(String(item.status))); const outstandingMinorUnits = activeInvoices.reduce((sum, item) => sum + Number(item.totalMinorUnits ?? 0) - Number(item.amountPaidMinorUnits ?? 0), 0); const paymentsReceivedMinorUnits = reportingSum(payments, "amountMinorUnits");
+  await writeReportingArea(workspaceId, "executive", { ...common, outstandingMinorUnits, paymentsReceivedMinorUnits }, ["tickets", "clients", "assets", "endpoints", "employees", "projects", "invoices", "payments", "knowledgeArticles", "attendanceExceptions", "auditLogs"], now, snapshot);
+  await Promise.all([
+    writeReportingArea(workspaceId, "service-desk", { openTickets: common.openTickets, criticalTickets: common.criticalTickets, createdTickets: tickets.length, statusGroups: Object.keys(reportingGroups(tickets, "status")).length }, ["tickets"], now, snapshot),
+    writeReportingArea(workspaceId, "clients", { activeClients: common.activeClients, onboardingClients: common.onboardingClients, formerClients: clients.filter((item) => item.status === "FORMER").length }, ["clients", "contracts"], now, snapshot),
+    writeReportingArea(workspaceId, "assets", { managedAssets: common.managedAssets, healthyAssets: common.healthyAssets, atRiskAssets: common.atRiskAssets }, ["assets", "assetWarranties"], now, snapshot),
+    writeReportingArea(workspaceId, "networks", { managedEndpoints: common.managedEndpoints, offlineEndpoints: common.offlineEndpoints, compliantEndpoints: common.compliantEndpoints }, ["endpoints", "networkAlerts"], now, snapshot),
+    writeReportingArea(workspaceId, "employees", { activeEmployees: common.activeEmployees, onboardingEmployees: employees.filter((item) => item.lifecycleState === "ONBOARDING").length, offboardingEmployees: employees.filter((item) => item.lifecycleState === "OFFBOARDING").length }, ["employees", "employeeContracts", "employeeTraining", "employeeQualifications"], now, snapshot),
+    writeReportingArea(workspaceId, "projects", { activeProjects: common.activeProjects, atRiskProjects: common.atRiskProjects }, ["projects", "projectTasks", "projectMilestones", "projectTimeEntries"], now, snapshot),
+    writeReportingArea(workspaceId, "finance", { outstandingMinorUnits, paymentsReceivedMinorUnits, invoiceCount: activeInvoices.length }, ["invoices", "payments", "quotes", "expenses", "purchaseOrders"], now, snapshot),
+    writeReportingArea(workspaceId, "knowledge", { publishedArticles: common.publishedArticles, articlesInReview: common.articlesInReview }, ["knowledgeArticles", "knowledgeFeedback", "knowledgeSearchEvents", "policyAcknowledgements"], now, snapshot),
+    writeReportingArea(workspaceId, "security", { auditEvents: common.auditEvents, endpointEnrolments: await reportingCount("endpointEnrollments", workspaceId) }, ["auditLogs", "reportExports", "endpointEnrollments"], now, snapshot),
+  ]);
+}
+
+export const runScheduledReportingAggregation = onSchedule("every 60 minutes", async () => {
+  const workspaces = await db.collection("workspaces").limit(100).get(); const generatedAt = new Date(); let completed = 0; for (const workspace of workspaces.docs) { try { await aggregateReportingWorkspace(workspace.id, false); completed += 1; } catch (error) { await db.collection("reportingRebuildJobs").doc(`aggregation-failure-${workspace.id}-${generatedAt.toISOString().slice(0, 13)}`).set({ workspaceId: workspace.id, jobType: "AGGREGATION", status: "FAILED", error: String(error), createdAt: FieldValue.serverTimestamp() }, { merge: true }); } } logger.info("Reporting aggregation sweep", { workspaces: workspaces.size, completed });
+});
+
+export const runScheduledReportingSnapshots = onSchedule("every day 01:30", async () => {
+  const workspaces = await db.collection("workspaces").limit(100).get(); let completed = 0; for (const workspace of workspaces.docs) { try { await aggregateReportingWorkspace(workspace.id, true); completed += 1; } catch (error) { await db.collection("reportingRebuildJobs").doc(`snapshot-failure-${workspace.id}-${new Date().toISOString().slice(0, 10)}`).set({ workspaceId: workspace.id, jobType: "SNAPSHOT", status: "FAILED", error: String(error), createdAt: FieldValue.serverTimestamp() }, { merge: true }); } } logger.info("Reporting snapshot sweep", { workspaces: workspaces.size, completed });
+});
+
+export const runScheduledReportExports = onSchedule("every 15 minutes", async () => {
+  const queued = await db.collection("reportExports").where("status", "==", "QUEUED").limit(20).get(); let completed = 0; for (const document of queued.docs) { const report = document.data(); await document.ref.set({ status: "RUNNING", startedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); try { const aggregate = await db.collection("reportingAggregates").doc(`${report.workspaceId}:${report.area}:current`).get(); if (!aggregate.exists) throw new Error("Reporting aggregate is not available yet."); const data = aggregate.data() ?? {}; const lines = ["metric,value", ...Object.entries((data.metrics ?? {}) as Record<string, unknown>).map(([key, value]) => `${reportingCsvCell(key)},${reportingCsvCell(value)}`)].join("\n"); const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? process.env.FIREBASE_STORAGE_BUCKET ?? app.options.storageBucket; if (!bucketName) throw new Error("Storage bucket is not configured."); const storagePath = `workspaces/${report.workspaceId}/reports/exports/${document.id}/report.${String(report.format).toLowerCase() === "markdown" ? "md" : "csv"}`; await getStorage(app).bucket(bucketName).file(storagePath).save(Buffer.from(lines), { metadata: { contentType: String(report.format).toLowerCase() === "markdown" ? "text/markdown" : "text/csv" }, resumable: false }); await document.ref.set({ status: "COMPLETED", storagePath, rowCount: Object.keys((data.metrics ?? {}) as Record<string, unknown>).length, completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); completed += 1; } catch (error) { await document.ref.set({ status: "FAILED", error: String(error).slice(0, 500), failureCount: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); } } logger.info("Report export sweep", { queued: queued.size, completed });
+});
+
+export const runScheduledReportSchedules = onSchedule("every 15 minutes", async () => {
+  const now = new Date();
+  const schedules = await db.collection("reportSchedules").where("active", "==", true).where("nextRunAt", "<=", now).limit(100).get();
+  let executions = 0;
+  for (const scheduleDocument of schedules.docs) {
+    const schedule = scheduleDocument.data();
+    const bucket = now.toISOString().slice(0, 13);
+    const executionId = `${scheduleDocument.id}:${bucket}`;
+    const execution = db.collection("reportExecutions").doc(executionId);
+    if ((await execution.get()).exists) continue;
+    await execution.create({ id: executionId, workspaceId: schedule.workspaceId, ownerId: schedule.ownerId, scheduleId: scheduleDocument.id, reportId: schedule.reportId, status: "QUEUED", idempotencyKey: executionId, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    await db.collection("reportExports").doc(`${executionId}:export`).create({ id: `${executionId}:export`, workspaceId: schedule.workspaceId, requestedBy: schedule.ownerId, area: schedule.area ?? "executive", format: schedule.format, status: "QUEUED", sourceExecutionId: executionId, idempotencyKey: `${executionId}:export`, expiresAt: new Date(Date.now() + 30 * 86400000), createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    await scheduleDocument.ref.set({ lastRunAt: FieldValue.serverTimestamp(), nextRunAt: nextReportRun(now, String(schedule.frequency ?? "DAILY")), lastResult: "QUEUED", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    executions += 1;
+  }
+  logger.info("Report schedule sweep", { schedules: schedules.size, executions });
+});
+
+export const runScheduledReportExecutionReconciliation = onSchedule("every 15 minutes", async () => {
+  const queued = await db.collection("reportExecutions").where("status", "==", "QUEUED").limit(100).get();
+  let updated = 0;
+  for (const execution of queued.docs) {
+    const exportDocument = await db.collection("reportExports").doc(`${execution.id}:export`).get();
+    if (!exportDocument.exists) continue;
+    const status = exportDocument.data()?.status;
+    if (status === "COMPLETED" || status === "FAILED") {
+      await execution.ref.set({ status, completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      updated += 1;
+    }
+  }
+  logger.info("Report execution reconciliation", { queued: queued.size, updated });
 });

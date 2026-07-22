@@ -64,6 +64,20 @@ service cloud.firestore {
         && (data.visibility == "PUBLIC" || (data.visibility == "CLIENT" && portalMatches(data.clientId)));
     }
 
+    function canReadReportingArea(area) {
+      return area == "executive" && hasPermission("reports.executive.view")
+        || area == "service-desk" && hasPermission("reports.service_desk.view")
+        || area == "clients" && hasPermission("reports.clients.view")
+        || area == "assets" && hasPermission("reports.assets.view")
+        || area == "networks" && hasPermission("reports.networks.view")
+        || area == "employees" && hasPermission("reports.employees.view")
+        || area == "attendance" && hasPermission("reports.attendance.view")
+        || area == "projects" && hasPermission("reports.projects.view")
+        || area == "finance" && hasPermission("reports.finance.view")
+        || area == "knowledge" && hasPermission("reports.knowledge.view")
+        || area == "security" && hasPermission("reports.security.view");
+    }
+
     match /workspaces/{workspaceId} {
       allow read: if workspaceMatches(workspaceId) || hasPermission("workspaces.manage");
       allow write: if hasPermission("workspaces.manage");
@@ -786,6 +800,55 @@ service cloud.firestore {
     match /knowledgeArticleTemplates/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
     match /knowledgeCollectionItems/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
     match /knowledgeCredentialReferences/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId) && hasPermission("knowledge.credential_references.view"); allow write: if false; }
+
+    match /reportDefinitions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("reports.view");
+      allow write: if false;
+    }
+    match /savedReports/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.ownerId == request.auth.uid || resource.data.sharedUserIds.hasAny([request.auth.uid]) || hasPermission("reports.manage"));
+      allow write: if false;
+    }
+    match /reportSchedules/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.ownerId == request.auth.uid || hasPermission("reports.manage"));
+      allow write: if false;
+    }
+    match /reportExecutions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.ownerId == request.auth.uid || hasPermission("reports.manage"));
+      allow write: if false;
+    }
+    match /reportExports/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.requestedBy == request.auth.uid || hasPermission("reports.manage"));
+      allow write: if false;
+    }
+    match /reportPermissions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("reports.manage");
+      allow write: if false;
+    }
+    match /kpiDefinitions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("reports.view");
+      allow write: if false;
+    }
+    match /reportingAggregates/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && canReadReportingArea(resource.data.area);
+      allow write: if false;
+    }
+    match /reportingSnapshots/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && canReadReportingArea(resource.data.area);
+      allow write: if false;
+    }
+    match /reportingRebuildJobs/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("reports.manage");
+      allow write: if false;
+    }
+    match /reportingActivities/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("reports.audit.view");
+      allow write: if false;
+    }
+    match /dashboardPreferences/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("reports.view");
+      allow write: if false;
+    }
 
     match /{document=**} {
       allow read, write: if false;

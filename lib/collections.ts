@@ -182,6 +182,18 @@ export const collectionNames = {
   knowledgeArticleTemplates: "knowledgeArticleTemplates",
   knowledgeCollectionItems: "knowledgeCollectionItems",
   knowledgeCredentialReferences: "knowledgeCredentialReferences",
+  reportDefinitions: "reportDefinitions",
+  savedReports: "savedReports",
+  reportSchedules: "reportSchedules",
+  reportExecutions: "reportExecutions",
+  reportExports: "reportExports",
+  reportPermissions: "reportPermissions",
+  kpiDefinitions: "kpiDefinitions",
+  reportingAggregates: "reportingAggregates",
+  reportingSnapshots: "reportingSnapshots",
+  reportingRebuildJobs: "reportingRebuildJobs",
+  reportingActivities: "reportingActivities",
+  dashboardPreferences: "dashboardPreferences",
 } as const;
 
 export type CollectionName = (typeof collectionNames)[keyof typeof collectionNames];

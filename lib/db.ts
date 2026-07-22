@@ -206,6 +206,18 @@ const collections = {
   knowledgeArticleTemplate: "knowledgeArticleTemplates",
   knowledgeCollectionItem: "knowledgeCollectionItems",
   knowledgeCredentialReference: "knowledgeCredentialReferences",
+  reportDefinition: "reportDefinitions",
+  savedReport: "savedReports",
+  reportSchedule: "reportSchedules",
+  reportExecution: "reportExecutions",
+  reportExport: "reportExports",
+  reportPermission: "reportPermissions",
+  kpiDefinition: "kpiDefinitions",
+  reportingAggregate: "reportingAggregates",
+  reportingSnapshot: "reportingSnapshots",
+  reportingRebuildJob: "reportingRebuildJobs",
+  reportingActivity: "reportingActivities",
+  dashboardPreference: "dashboardPreferences",
 } as const;
 
 function convertValue(value: any): any {

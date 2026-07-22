@@ -33,7 +33,7 @@ export const navigationItems = [
   { label: "SLA Policies", href: "/administration/sla-policies", icon: Workflow, permission: "slaPolicies.view" },
   { label: "Automations", href: "/administration/automations", icon: Workflow, permission: "automation.view" },
   { label: "Email", href: "/administration/email", icon: Mail, permission: "email.view" },
-  { label: "Reports", href: "#", icon: BarChart3, comingSoon: true },
+  { label: "Reports", href: "/reports", icon: BarChart3, permission: "reports.view" },
   { label: "Administration", href: "/administration/users", icon: ShieldAlert, permission: "users.view" },
   { label: "Settings", href: "/settings", icon: Settings2, permission: "settings.view" },
 ] as const;

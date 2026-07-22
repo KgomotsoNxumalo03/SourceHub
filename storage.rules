@@ -76,6 +76,13 @@ service firebase.storage {
         && request.resource.contentType.matches("image/.*|application/pdf|text/plain|application/zip|application/x-zip-compressed|application/vnd.openxmlformats-officedocument.*");
     }
 
+    match /workspaces/{workspaceId}/reports/exports/{exportId}/{fileName} {
+      allow read: if workspaceMatches(workspaceId)
+        && (hasPermission("reports.manage") || get(/databases/(default)/documents/reportExports/$(exportId)).data.requestedBy == request.auth.uid)
+        && get(/databases/(default)/documents/reportExports/$(exportId)).data.status == "COMPLETED";
+      allow write: if false;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -223,3 +223,25 @@ Knowledge content is sanitised on the server, stored with plain-text search toke
 Phase 11 adds Firebase composite indexes, Firestore and Storage rules, fictional seed categories/articles/feedback/policy data, and scheduled Functions for review reminders, expiry transitions, idempotent notifications, and public-link checks. Configure `KNOWLEDGE_*` variables from `.env.example`, deploy rules/indexes/storage/functions, and run `npm run seed` only against an emulator or approved development project. This module supports POPIA-conscious design but does not claim legal, security, or compliance certification.
 
 The current application session is the internal employee session. A deployed Firebase portal sign-in flow is still required to expose client claims (`portal`, `clientId`) to a separate client portal UI; direct Firestore and Storage rules already enforce those claims for client-visible articles and files. Firebase Emulator rules tests require the Firebase CLI and Java runtime, which are not bundled with this repository.
+
+## Phase 12: Reporting & Analytics
+
+Reporting is available under `/reports`. The home page links to the executive scorecard and permission-gated module dashboards for service desk, clients, assets, networks, employees, attendance, projects, finance, knowledge, and security. Each dashboard supports server-side date ranges, previous-period comparisons, filters, drill-down links, KPI definitions, freshness state, saved configurations, and controlled CSV export. `/reports/saved`, `/reports/builder`, `/reports/kpis`, and `/reports/schedules` provide the report library, controlled custom builder, KPI catalogue, and scheduled-report administration.
+
+The reporting read layer is implemented in `lib/reporting.ts`. It scopes every query to the authenticated workspace, reads only bounded operational datasets, performs grouping and calculations on the server, and returns a controlled `ReportResult` rather than raw collection data. Monetary values use the finance module's integer minor-unit authority and `amountPaidMinorUnits`; browser code does not calculate financial totals. Report definitions and KPI definitions document source collections, formulas, owners, units, targets, and limitations.
+
+Materialized reporting data is stored in `reportingAggregates` for current operational summaries and `reportingSnapshots` for daily historical snapshots. Firebase Functions refresh aggregates hourly, create daily snapshots, process queued exports privately in Storage, create idempotent schedule executions, and reconcile execution status. Data freshness is visible in every dashboard: `CURRENT`, `AGING`, or `STALE`, based on `REPORTING_STALE_AFTER_MINUTES`. Reporting is eventually consistent between operational writes and scheduled materialization; the dashboard labels the last generated and source-updated times rather than hiding that delay.
+
+Phase 12 collections are `reportDefinitions`, `savedReports`, `reportSchedules`, `reportExecutions`, `reportExports`, `reportPermissions`, `kpiDefinitions`, `reportingAggregates`, `reportingSnapshots`, `reportingRebuildJobs`, `reportingActivities`, and `dashboardPreferences`. Composite indexes are in `firebase.indexes.json`. Firestore rules deny browser writes to reporting records and map module reads to exact `reports.<area>.view` permissions. Shared reports are limited to explicit internal user IDs in the same workspace. Storage export files are private and readable only by the requesting owner or reporting managers after completion.
+
+Configure `REPORTING_AGGREGATION_INTERVAL_MINUTES`, `REPORTING_EXPORT_MAX_ROWS`, `REPORTING_EXPORT_RETENTION_DAYS`, `REPORTING_STALE_AFTER_MINUTES`, and `REPORTING_SCHEDULE_MAX_RECIPIENTS` from `.env.example`. Deploy the rules, indexes, Storage rules, and Functions before enabling scheduled reporting:
+
+```powershell
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project <firebase-project-id>
+npx firebase-tools deploy --only functions --project <firebase-project-id>
+npm.cmd run seed
+```
+
+Run the seed only against the Firebase Emulator Suite or an approved development project. The seed includes fictional KPI definitions, aggregate and snapshot examples, a saved executive report, schedule, execution, and export records. Actual outbound email or FCM delivery is intentionally not fabricated by the scheduler; scheduled exports create auditable private artifacts and execution records for the deployed notification provider to deliver.
+
+Reporting validation includes pure calculation and CSV-injection tests in `tests/reporting.test.ts`, plus the repository-wide lint, typecheck, unit tests, Functions build, and Next production build. Emulator rule tests remain dependent on the Firebase CLI and Java runtime being installed on the development machine.
