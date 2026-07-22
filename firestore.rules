@@ -54,6 +54,16 @@ service cloud.firestore {
       );
     }
 
+    function canReadKnowledgeInternal(workspaceId) {
+      return workspaceMatches(workspaceId) && hasPermission("knowledge.internal.view");
+    }
+
+    function canReadKnowledgeClient(data) {
+      return data.workspaceId == request.auth.token.workspaceId
+        && data.status == "PUBLISHED"
+        && (data.visibility == "PUBLIC" || (data.visibility == "CLIENT" && portalMatches(data.clientId)));
+    }
+
     match /workspaces/{workspaceId} {
       allow read: if workspaceMatches(workspaceId) || hasPermission("workspaces.manage");
       allow write: if hasPermission("workspaces.manage");
@@ -701,6 +711,81 @@ service cloud.firestore {
     match /financialNumberCounters/{id} {
       allow read, write: if false;
     }
+
+    match /knowledgeArticles/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId) || (signedIn() && canReadKnowledgeClient(resource.data));
+      allow write: if false;
+    }
+    match /knowledgeCategories/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId) || (signedIn() && canReadKnowledgeClient(resource.data));
+      allow write: if false;
+    }
+    match /knowledgeTags/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeRevisions/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeReviews/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeReviewComments/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeFeedback/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeAttachments/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId) || (signedIn() && canReadKnowledgeClient(resource.data));
+      allow write: if false;
+    }
+    match /policyAcknowledgements/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId) || (signedIn() && resource.data.userId == request.auth.uid && workspaceMatches(resource.data.workspaceId) && hasPermission("knowledge.acknowledgements.view"));
+      allow write: if false;
+    }
+    match /knowledgeActivities/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeViews/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeSearchEvents/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeLinkChecks/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeTicketLinks/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeAssetLinks/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeNetworkLinks/{id} {
+      allow read: if canReadKnowledgeInternal(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /knowledgeArticleUniqueness/{id} { allow read, write: if false; }
+    match /knowledgeSlugUniqueness/{id} { allow read, write: if false; }
+    match /policyAcknowledgementUniqueness/{id} { allow read, write: if false; }
+    match /knowledgeImportJobs/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeSavedViews/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeJobRuns/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeClientAssignments/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeArticleTemplates/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeCollectionItems/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId); allow write: if false; }
+    match /knowledgeCredentialReferences/{id} { allow read: if canReadKnowledgeInternal(resource.data.workspaceId) && hasPermission("knowledge.credential_references.view"); allow write: if false; }
 
     match /{document=**} {
       allow read, write: if false;

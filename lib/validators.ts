@@ -796,3 +796,91 @@ export const projectDependencySchema = z.object({
   successorTaskId: z.string().trim().min(1),
   dependencyType: z.enum(dependencyTypes),
 });
+
+export const knowledgeArticleAreas = ["INTERNAL", "CLIENT", "PUBLIC"] as const;
+export const knowledgeArticleStatuses = ["DRAFT", "IN_REVIEW", "CHANGES_REQUESTED", "APPROVED", "PUBLISHED", "EXPIRED", "ARCHIVED"] as const;
+export const knowledgeArticleTypes = ["GUIDE", "TROUBLESHOOTING", "FAQ", "POLICY", "PROCEDURE", "SOP", "CHECKLIST", "REFERENCE", "CLIENT_DOCUMENTATION", "KNOWN_ISSUE", "RELEASE_NOTE", "TEMPLATE"] as const;
+export const knowledgeVisibilityTypes = ["INTERNAL", "CLIENT", "PUBLIC"] as const;
+export const knowledgeRelationTypes = ["RELATED", "PREREQUISITE", "FOLLOW_UP", "ALTERNATIVE", "PARENT", "CHILD", "SERIES", "KNOWN_ISSUE"] as const;
+
+const knowledgeOptionalDate = z.string().trim().optional().or(z.literal(""));
+const knowledgeTags = z.array(z.string().trim().min(1).max(40)).max(30).default([]);
+
+export const knowledgeArticleSchema = z.object({
+  title: z.string().trim().min(3).max(180),
+  slug: z.string().trim().max(180).optional().or(z.literal("")),
+  summary: z.string().trim().max(600).default(""),
+  contentHtml: z.string().max(250000),
+  contentText: z.string().max(100000).optional().default(""),
+  area: z.enum(knowledgeArticleAreas),
+  categoryId: z.string().trim().optional().or(z.literal("")),
+  subcategoryId: z.string().trim().optional().or(z.literal("")),
+  tags: knowledgeTags,
+  clientId: z.string().trim().optional().or(z.literal("")),
+  siteIds: z.array(z.string().trim()).max(100).default([]),
+  visibility: z.enum(knowledgeVisibilityTypes),
+  status: z.enum(knowledgeArticleStatuses).default("DRAFT"),
+  articleType: z.enum(knowledgeArticleTypes),
+  readingTimeMinutes: z.coerce.number().int().min(1).max(240).default(5),
+  featured: z.coerce.boolean().default(false),
+  pinned: z.coerce.boolean().default(false),
+  ownerId: z.string().trim().min(1),
+  reviewerIds: z.array(z.string().trim()).max(20).default([]),
+  reviewDate: knowledgeOptionalDate,
+  expiryDate: knowledgeOptionalDate,
+  publishedAt: knowledgeOptionalDate,
+  confidential: z.coerce.boolean().default(false),
+  credentialReferenceIds: z.array(z.string().trim()).max(20).default([]),
+});
+
+export const knowledgeCategorySchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  description: z.string().trim().max(500).default(""),
+  icon: z.string().trim().max(40).default("book-open"),
+  parentId: z.string().trim().optional().or(z.literal("")),
+  area: z.enum(knowledgeArticleAreas),
+  sortOrder: z.coerce.number().int().min(0).max(10000).default(0),
+  active: z.coerce.boolean().default(true),
+});
+
+export const knowledgeRevisionSchema = knowledgeArticleSchema.pick({ title: true, summary: true, contentHtml: true, contentText: true, categoryId: true, tags: true, visibility: true, clientId: true, siteIds: true }).extend({
+  articleId: z.string().trim().min(1),
+  changeDescription: z.string().trim().max(500).default(""),
+});
+
+export const knowledgeReviewDecisionSchema = z.object({
+  articleId: z.string().trim().min(1),
+  decision: z.enum(["APPROVE", "REQUEST_CHANGES", "REJECT"]),
+  comment: z.string().trim().max(3000).default(""),
+});
+
+export const knowledgeRelationSchema = z.object({
+  articleId: z.string().trim().min(1),
+  relatedArticleId: z.string().trim().min(1),
+  relationType: z.enum(knowledgeRelationTypes),
+});
+
+export const knowledgeFeedbackSchema = z.object({
+  articleId: z.string().trim().min(1),
+  type: z.enum(["HELPFUL", "NOT_HELPFUL", "SUGGESTED_CORRECTION", "BROKEN_LINK", "OUTDATED", "MISSING_STEP"]),
+  comment: z.string().trim().max(2000).default(""),
+  anonymous: z.coerce.boolean().default(true),
+});
+
+export const knowledgeSearchSchema = z.object({
+  query: z.string().trim().max(120).default(""),
+  area: z.enum(knowledgeArticleAreas).optional(),
+  categoryId: z.string().trim().optional(),
+  articleType: z.enum(knowledgeArticleTypes).optional(),
+  clientId: z.string().trim().optional(),
+  tag: z.string().trim().optional(),
+  cursor: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const knowledgeImportSchema = z.object({
+  format: z.enum(["markdown", "plain", "html", "csv"]),
+  sourceName: z.string().trim().min(1).max(200),
+  idempotencyKey: z.string().trim().min(8).max(200),
+  content: z.string().max(1000000),
+});

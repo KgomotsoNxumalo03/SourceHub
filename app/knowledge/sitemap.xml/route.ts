@@ -1,0 +1,4 @@
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+export const dynamic = "force-dynamic";
+export async function GET() { const articles: any[] = await prisma.knowledgeArticle.findMany({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID, status: "PUBLISHED", visibility: "PUBLIC" }, orderBy: [{ updatedAt: "desc" }], take: 5000 }); const base = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ""); const urls = articles.map((article) => `<url><loc>${base}/knowledge/public/${encodeURIComponent(article.slug)}</loc><lastmod>${new Date(article.updatedAt ?? Date.now()).toISOString()}</lastmod></url>`).join(""); return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { headers: { "Content-Type": "application/xml; charset=utf-8" } }); }

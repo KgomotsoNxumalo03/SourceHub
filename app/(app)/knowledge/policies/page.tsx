@@ -1,0 +1,5 @@
+import { requirePermission } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+import { Card, CardContent, PageHeader, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "@/components/ui";
+export default async function KnowledgePoliciesPage() { await requirePermission("knowledge.policies.manage"); const policies: any[] = await prisma.knowledgeArticle.findMany({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID, articleType: "POLICY" }, orderBy: [{ updatedAt: "desc" }], take: 100 }); return <div className="space-y-6"><PageHeader eyebrow="Knowledge governance" title="Policies" description="Policies remain revisioned and acknowledgements point to an exact published revision." /><Table><TableHead><TableRow><TableHeadCell>Policy</TableHeadCell><TableHeadCell>Status</TableHeadCell><TableHeadCell>Published version</TableHeadCell></TableRow></TableHead><TableBody>{policies.map((policy) => <TableRow key={policy.id}><TableCell>{policy.title}</TableCell><TableCell>{policy.status}</TableCell><TableCell>{policy.publishedVersion ?? "-"}</TableCell></TableRow>)}</TableBody></Table></div>; }

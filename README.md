@@ -213,3 +213,13 @@ npm.cmd run lint
 npm.cmd run build
 npm.cmd run seed
 ```
+
+## Phase 11: Knowledge Base
+
+The Knowledge Base is available internally at `/knowledge` and publicly at `/knowledge/public`. Articles, categories, immutable revisions, review decisions, publication snapshots, relations, feedback, policy acknowledgements, import jobs, analytics, attachment metadata, and scheduled job records are persisted in Firestore. Public pages only query published `PUBLIC` articles and render server-sanitised HTML; client-scoped access is represented by Firebase portal claims and is never granted from a URL parameter.
+
+Knowledge content is sanitised on the server, stored with plain-text search tokens, checked for likely secrets, and protected by permission-gated server actions. Published revisions are copied into a publication snapshot; edits create a new draft revision instead of mutating published history. Private attachments use `workspaces/{workspaceId}/knowledge/{articleId}/...` Storage paths and the download route requires internal permission. CSV and Markdown exports are audited at `/api/knowledge/export`.
+
+Phase 11 adds Firebase composite indexes, Firestore and Storage rules, fictional seed categories/articles/feedback/policy data, and scheduled Functions for review reminders, expiry transitions, idempotent notifications, and public-link checks. Configure `KNOWLEDGE_*` variables from `.env.example`, deploy rules/indexes/storage/functions, and run `npm run seed` only against an emulator or approved development project. This module supports POPIA-conscious design but does not claim legal, security, or compliance certification.
+
+The current application session is the internal employee session. A deployed Firebase portal sign-in flow is still required to expose client claims (`portal`, `clientId`) to a separate client portal UI; direct Firestore and Storage rules already enforce those claims for client-visible articles and files. Firebase Emulator rules tests require the Firebase CLI and Java runtime, which are not bundled with this repository.

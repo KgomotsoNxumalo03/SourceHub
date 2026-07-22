@@ -1,0 +1,5 @@
+import { requirePermission } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+import { Card, CardContent, PageHeader } from "@/components/ui";
+export default async function KnowledgeAnalyticsPage() { await requirePermission("knowledge.analytics.view"); const [views, feedback, searches] = await Promise.all([prisma.knowledgeView.count({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID } }), prisma.knowledgeFeedback.count({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID } }), prisma.knowledgeSearchEvent.count({ where: { workspaceId: env.DEFAULT_WORKSPACE_ID } })]); return <div className="space-y-6"><PageHeader eyebrow="Knowledge insights" title="Analytics" description="Aggregated usage and feedback only. Content and credentials are excluded from analytics events." /><div className="grid gap-4 md:grid-cols-3">{[["Article views", views], ["Feedback items", feedback], ["Search events", searches]].map(([label, value]) => <Card key={String(label)}><CardContent><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></CardContent></Card>)}</div></div>; }

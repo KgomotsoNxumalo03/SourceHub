@@ -80,6 +80,10 @@ export function buildFinanceStoragePath(
   return buildWorkspaceStoragePath(workspaceId, "finance", documentType, documentId, fileName);
 }
 
+export function buildKnowledgeStoragePath(workspaceId: string, articleId: string, fileName: string) {
+  return buildWorkspaceStoragePath(workspaceId, "knowledge", articleId, fileName);
+}
+
 export function validateUpload({
   fileName,
   mimeType,

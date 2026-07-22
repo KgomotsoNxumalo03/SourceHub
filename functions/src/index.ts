@@ -279,3 +279,66 @@ export const runScheduledProjectChecks = onSchedule("every 30 minutes", async ()
   }
   logger.info("Scheduled project health sweep", { projects: projects.size, healthUpdates, overdueNotifications });
 });
+
+function publicHttpUrls(input: string) {
+  const matches = input.match(/https?:\/\/[^\s"'<>]+/gi) ?? [];
+  return Array.from(new Set(matches)).filter((value) => {
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase();
+      return !url.username && !url.password && !["localhost", "127.0.0.1", "::1"].includes(host) && !host.endsWith(".local") && !host.startsWith("10.") && !host.startsWith("192.168.") && !/^172\.(1[6-9]|2\d|3[01])\./.test(host) && !host.startsWith("169.254.");
+    } catch { return false; }
+  }).slice(0, 100);
+}
+
+export const runScheduledKnowledgeReviewChecks = onSchedule("every day 06:45", async () => {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + Number(process.env.KNOWLEDGE_REVIEW_REMINDER_DAYS ?? 14) * 86_400_000);
+  const [reviewDue, expiryDue] = await Promise.all([
+    db.collection("knowledgeArticles").where("status", "==", "PUBLISHED").where("reviewDate", "<=", horizon).limit(1000).get(),
+    db.collection("knowledgeArticles").where("status", "==", "PUBLISHED").where("expiryDate", "<=", now).limit(1000).get(),
+  ]);
+  let expired = 0;
+  for (const document of expiryDue.docs) {
+    const article = document.data();
+    await document.ref.set({ status: "EXPIRED", expiredAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    expired += 1;
+    if (article.ownerId) {
+      const notification = db.collection("notifications").doc(`knowledge-expired-${document.id}`);
+      if (!(await notification.get()).exists) await notification.create({ id: notification.id, workspaceId: article.workspaceId, userId: article.ownerId, title: "Knowledge article expired", message: `${article.title} has reached its expiry date.`, type: "KNOWLEDGE_EXPIRY", link: `/knowledge/${document.id}`, readAt: null, createdAt: FieldValue.serverTimestamp() });
+    }
+  }
+  let reminders = 0;
+  for (const document of reviewDue.docs) {
+    const article = document.data();
+    if (!article.ownerId) continue;
+    const reviewKey = asDate(article.reviewDate)?.toISOString().slice(0, 10) ?? "missing";
+    const notification = db.collection("notifications").doc(`knowledge-review-${document.id}-${reviewKey}`);
+    if ((await notification.get()).exists) continue;
+    await notification.create({ id: notification.id, workspaceId: article.workspaceId, userId: article.ownerId, title: "Knowledge review due", message: `${article.title} is due for review.`, type: "KNOWLEDGE_REVIEW_DUE", link: `/knowledge/${document.id}`, readAt: null, createdAt: FieldValue.serverTimestamp() });
+    reminders += 1;
+  }
+  await db.collection("knowledgeJobRuns").doc(`review-${now.toISOString().slice(0, 10)}`).set({ job: "review-checks", status: "COMPLETED", expired, reminders, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+  logger.info("Scheduled knowledge review sweep", { expired, reminders });
+});
+
+export const runScheduledKnowledgeLinkChecks = onSchedule("every day 07:15", async () => {
+  const articles = await db.collection("knowledgeArticles").where("status", "==", "PUBLISHED").where("visibility", "==", "PUBLIC").limit(500).get();
+  let checked = 0;
+  for (const document of articles.docs) {
+    const article = document.data();
+    for (const url of publicHttpUrls(`${article.contentHtml ?? ""} ${article.contentText ?? ""}`)) {
+      let status = "UNKNOWN";
+      let responseCode: number | null = null;
+      try {
+        const response = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(5000), redirect: "manual" });
+        responseCode = response.status;
+        status = response.ok ? "OK" : "BROKEN";
+      } catch { status = "UNREACHABLE"; }
+      await db.collection("knowledgeLinkChecks").doc(`${document.id}:${Buffer.from(url).toString("base64url").slice(0, 80)}`).set({ workspaceId: article.workspaceId, articleId: document.id, url, status, responseCode, checkedAt: FieldValue.serverTimestamp() }, { merge: true });
+      checked += 1;
+    }
+  }
+  await db.collection("knowledgeJobRuns").doc(`links-${new Date().toISOString().slice(0, 10)}`).set({ job: "link-checks", status: "COMPLETED", checked, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+  logger.info("Scheduled knowledge link sweep", { articles: articles.size, checked });
+});

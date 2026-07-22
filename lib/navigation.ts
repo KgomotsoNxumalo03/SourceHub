@@ -14,6 +14,7 @@ import {
   Mail,
   FolderKanban,
   ReceiptText,
+  BookOpenText,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -27,6 +28,7 @@ export const navigationItems = [
   { label: "Employees", href: "/employees", icon: Users, permission: "employees.view" },
   { label: "Projects", href: "/projects", icon: FolderKanban, permission: "projects.view" },
   { label: "Finance", href: "/finance", icon: ReceiptText, permission: "finance.dashboard.view" },
+  { label: "Knowledge Base", href: "/knowledge", icon: BookOpenText, permission: "knowledge.internal.view" },
   { label: "Administration", href: "/administration/users", icon: Users, permission: "users.view" },
   { label: "SLA Policies", href: "/administration/sla-policies", icon: Workflow, permission: "slaPolicies.view" },
   { label: "Automations", href: "/administration/automations", icon: Workflow, permission: "automation.view" },

@@ -66,6 +66,16 @@ service firebase.storage {
         && request.resource.contentType.matches("application/pdf|image/.*|text/plain|application/zip|application/x-zip-compressed|application/vnd.openxmlformats-officedocument.*");
     }
 
+    match /workspaces/{workspaceId}/knowledge/{articleId}/{fileName} {
+      allow read: if workspaceMatches(workspaceId) && hasPermission("knowledge.internal.view")
+        || (signedIn() && get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.status == "PUBLISHED"
+          && get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.visibility == "CLIENT"
+          && portalMatches(get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.clientId));
+      allow write: if workspaceMatches(workspaceId) && hasPermission("knowledge.files.manage")
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches("image/.*|application/pdf|text/plain|application/zip|application/x-zip-compressed|application/vnd.openxmlformats-officedocument.*");
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }
