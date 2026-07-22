@@ -15,6 +15,7 @@ import {
   uploadClientFileAction,
 } from "@/lib/actions/clients";
 import { buttonClassName } from "@/lib/button";
+import { AiContextLink } from "@/components/ai-context-link";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -104,6 +105,7 @@ export default async function ClientDetailPage({
         description={client.legalName ?? client.code}
         actions={
           <div className="flex flex-wrap items-center gap-3">
+            <AiContextLink module="clients" type="client" id={client.id} enabled={actor.permissions.includes("ai.use") && actor.permissions.includes("ai.clients.use")} />
             <Link href="/clients" className={buttonClassName({ variant: "outline" })}>
               Back to clients
             </Link>

@@ -15,6 +15,7 @@ import {
   FolderKanban,
   ReceiptText,
   BookOpenText,
+  Sparkles,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -34,6 +35,8 @@ export const navigationItems = [
   { label: "Automations", href: "/administration/automations", icon: Workflow, permission: "automation.view" },
   { label: "Email", href: "/administration/email", icon: Mail, permission: "email.view" },
   { label: "Reports", href: "/reports", icon: BarChart3, permission: "reports.view" },
+  { label: "SourceHub AI", href: "/ai", icon: Sparkles, permission: "ai.use" },
+  { label: "AI Administration", href: "/administration/ai", icon: ShieldAlert, permission: "ai.settings.manage" },
   { label: "Administration", href: "/administration/users", icon: ShieldAlert, permission: "users.view" },
   { label: "Settings", href: "/settings", icon: Settings2, permission: "settings.view" },
 ] as const;

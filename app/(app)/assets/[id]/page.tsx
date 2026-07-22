@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 
 import { createAssetMaintenanceAction, createAssetSoftwareAction, createAssetWarrantyAction, assignAssetAction, changeAssetStatusAction, returnAssetAction, updateAssetAction, uploadAssetFileAction } from "@/lib/actions/assets";
 import { buttonClassName } from "@/lib/button";
+import { AiContextLink } from "@/components/ai-context-link";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -115,6 +116,7 @@ export default async function AssetDetailPage({
         description={asset.name}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <AiContextLink module="assets" type="asset" id={asset.id} enabled={actor.permissions.includes("ai.use") && actor.permissions.includes("ai.assets.use")} />
             <Link href="/assets" className={buttonClassName({ variant: "outline" })}>
               Back to assets
             </Link>

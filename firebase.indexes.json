@@ -601,6 +601,14 @@
     ,{ "collectionGroup": "reportingSnapshots", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "area", "order": "ASCENDING" }, { "fieldPath": "generatedAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "reportingAggregates", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "area", "order": "ASCENDING" }, { "fieldPath": "periodKey", "order": "ASCENDING" }, { "fieldPath": "generatedAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "reportingActivities", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiConversations", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiMessages", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "conversationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "aiActionProposals", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "conversationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiFeedback", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiUsage", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiActionExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiAuditEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "aiRateLimits", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "period", "order": "ASCENDING" }, { "fieldPath": "periodKey", "order": "ASCENDING" }] }
   ],
   "fieldOverrides": []
 }

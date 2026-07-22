@@ -1449,7 +1449,11 @@ async function main() {
   await upsert(collectionNames.reportExecutions, "report-execution-seed", { id: "report-execution-seed", workspaceId, ownerId: adminId, scheduleId: "report-schedule-seed", reportId: "saved-report-executive-seed", status: "COMPLETED", idempotencyKey: "seed:report-execution", generatedRowCount: 6, createdAt: new Date("2026-07-10T08:00:00.000Z"), completedAt: new Date("2026-07-10T08:01:00.000Z") });
   await upsert(collectionNames.reportExports, "report-export-seed", { id: "report-export-seed", workspaceId, requestedBy: adminId, area: "executive", format: "CSV", status: "COMPLETED", storagePath: null, rowCount: 6, expiresAt: new Date("2026-08-10T00:00:00.000Z"), idempotencyKey: "seed:report-export", createdAt: new Date("2026-07-10T08:00:00.000Z") });
 
-  console.log("Seeded SourceHub workspace, CRM, service desk, asset, network, employee, attendance, project, finance, knowledge, and reporting development data.");
+  await upsert(collectionNames.aiSettings, workspaceId, { id: workspaceId, workspaceId, enabled: true, emergencyDisabled: false, allowedModules: ["tickets", "clients", "assets", "networks", "employees", "attendance", "projects", "finance", "knowledge", "reports"], dailyRequestLimit: 100, monthlyRequestLimit: 2000, retentionDays: 90, provider: env.AI_PROVIDER, modelIdentifier: env.AI_MODEL, updatedBy: adminId, updatedAt: now });
+  await upsert(collectionNames.aiPromptVersions, "sourcehub-ai-v1", { id: "sourcehub-ai-v1", workspaceId, version: "sourcehub-ai-v1", purpose: "Secure SourceHub assistant baseline instructions.", active: true, createdBy: adminId, createdAt: now });
+  await upsert(collectionNames.aiFeaturePolicies, "ai-policy-default", { id: "ai-policy-default", workspaceId, feature: "assistant", enabled: true, allowedRoles: ["Super Administrator", "Service Desk Manager", "Technician", "CRM Manager"], requiresConfirmationForActions: true, createdBy: adminId, updatedAt: now });
+
+  console.log("Seeded SourceHub workspace, CRM, service desk, asset, network, employee, attendance, project, finance, knowledge, reporting, and AI development data.");
 }
 
 main().catch((error) => {

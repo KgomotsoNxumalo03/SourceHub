@@ -850,6 +850,63 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /aiConversations/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("ai.use");
+      allow write: if false;
+    }
+    match /aiMessages/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.use") && get(/databases/$(database)/documents/aiConversations/$(resource.data.conversationId)).data.userId == request.auth.uid;
+      allow write: if false;
+    }
+    match /aiToolExecutions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("ai.use");
+      allow write: if false;
+    }
+    match /aiActionProposals/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("ai.use");
+      allow write: if false;
+    }
+    match /aiActionExecutions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("ai.use");
+      allow write: if false;
+    }
+    match /aiUsage/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.userId == request.auth.uid || hasPermission("ai.usage.view"));
+      allow write: if false;
+    }
+    match /aiFeedback/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.userId == request.auth.uid || hasPermission("ai.feedback.review"));
+      allow write: if false;
+    }
+    match /aiSettings/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.settings.manage");
+      allow write: if false;
+    }
+    match /aiFeaturePolicies/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.settings.manage");
+      allow write: if false;
+    }
+    match /aiPromptVersions/{id} {
+      allow read: if signedIn() && hasPermission("ai.use");
+      allow write: if false;
+    }
+    match /aiRetrievalIndexes/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.settings.manage");
+      allow write: if false;
+    }
+    match /aiEmbeddingJobs/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.settings.manage");
+      allow write: if false;
+    }
+    match /aiAuditEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("ai.audit.view");
+      allow write: if false;
+    }
+    match /aiRateLimits/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("ai.use");
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -194,6 +194,20 @@ export const collectionNames = {
   reportingRebuildJobs: "reportingRebuildJobs",
   reportingActivities: "reportingActivities",
   dashboardPreferences: "dashboardPreferences",
+  aiConversations: "aiConversations",
+  aiMessages: "aiMessages",
+  aiToolExecutions: "aiToolExecutions",
+  aiActionProposals: "aiActionProposals",
+  aiActionExecutions: "aiActionExecutions",
+  aiUsage: "aiUsage",
+  aiFeedback: "aiFeedback",
+  aiSettings: "aiSettings",
+  aiFeaturePolicies: "aiFeaturePolicies",
+  aiPromptVersions: "aiPromptVersions",
+  aiRetrievalIndexes: "aiRetrievalIndexes",
+  aiEmbeddingJobs: "aiEmbeddingJobs",
+  aiAuditEvents: "aiAuditEvents",
+  aiRateLimits: "aiRateLimits",
 } as const;
 
 export type CollectionName = (typeof collectionNames)[keyof typeof collectionNames];

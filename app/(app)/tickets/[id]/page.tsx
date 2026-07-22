@@ -4,6 +4,7 @@ import { CalendarClock, Paperclip, UserCircle2 } from "lucide-react";
 
 import { addInternalNoteAction, addPublicReplyAction, assignTicketAction, updateTicketAction } from "@/lib/actions/tickets";
 import { buttonClassName } from "@/lib/button";
+import { AiContextLink } from "@/components/ai-context-link";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Input, PageHeader, Select, Textarea } from "@/components/ui";
@@ -217,6 +218,7 @@ export default async function TicketDetailPage({
         description={ticket.subject}
         actions={
           <div className="flex flex-wrap items-center gap-3">
+            <AiContextLink module="tickets" type="ticket" id={ticket.id} enabled={actor.permissions.includes("ai.use") && actor.permissions.includes("ai.tickets.use")} />
             <Link href="/tickets" className={buttonClassName({ variant: "outline" })}>
               Back to tickets
             </Link>

@@ -218,6 +218,20 @@ const collections = {
   reportingRebuildJob: "reportingRebuildJobs",
   reportingActivity: "reportingActivities",
   dashboardPreference: "dashboardPreferences",
+  aiConversation: "aiConversations",
+  aiMessage: "aiMessages",
+  aiToolExecution: "aiToolExecutions",
+  aiActionProposal: "aiActionProposals",
+  aiActionExecution: "aiActionExecutions",
+  aiUsage: "aiUsage",
+  aiFeedback: "aiFeedback",
+  aiSetting: "aiSettings",
+  aiFeaturePolicy: "aiFeaturePolicies",
+  aiPromptVersion: "aiPromptVersions",
+  aiRetrievalIndex: "aiRetrievalIndexes",
+  aiEmbeddingJob: "aiEmbeddingJobs",
+  aiAuditEvent: "aiAuditEvents",
+  aiRateLimit: "aiRateLimits",
 } as const;
 
 function convertValue(value: any): any {

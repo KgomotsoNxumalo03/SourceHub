@@ -429,3 +429,22 @@ export const runScheduledReportExecutionReconciliation = onSchedule("every 15 mi
   }
   logger.info("Report execution reconciliation", { queued: queued.size, updated });
 });
+
+export const runScheduledAiRetention = onSchedule("every day 02:15", async () => {
+  const now = new Date();
+  const conversations = await db.collection("aiConversations").where("expiresAt", "<", now).limit(100).get();
+  let deleted = 0;
+  for (const conversation of conversations.docs) {
+    const [messages, proposals] = await Promise.all([
+      db.collection("aiMessages").where("conversationId", "==", conversation.id).limit(400).get(),
+      db.collection("aiActionProposals").where("conversationId", "==", conversation.id).limit(100).get(),
+    ]);
+    const batch = db.batch();
+    messages.docs.forEach((document) => batch.delete(document.ref));
+    proposals.docs.forEach((document) => batch.delete(document.ref));
+    batch.delete(conversation.ref);
+    await batch.commit();
+    deleted += 1;
+  }
+  logger.info("AI retention sweep", { conversations: conversations.size, deleted });
+});

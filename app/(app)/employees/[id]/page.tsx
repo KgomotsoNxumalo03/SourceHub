@@ -8,6 +8,7 @@ import { env } from "@/lib/env";
 import { employeeDisplayName, employeeStatusLabels, employeeTypeLabels, maskIdentityReference } from "@/lib/employees";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { buttonClassName } from "@/lib/button";
+import { AiContextLink } from "@/components/ai-context-link";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, PageHeader, Select, StatCard, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow, Textarea } from "@/components/ui";
 import { changeEmployeeStatusAction, createContractAction, createEmergencyContactAction, createEmployeeNoteAction, createQualificationAction, createTrainingAction, startOffboardingAction, startOnboardingAction, updateEmployeeAction, uploadEmployeeDocumentAction } from "@/lib/actions/employees";
 
@@ -43,7 +44,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
   const managerOptions = managers.filter((item: any) => item.id !== employee.id);
 
   return <div className="space-y-6">
-    <PageHeader eyebrow="Employee Management" title={displayName} description={`${employee.employeeNumber} · ${employee.workEmail}`} actions={<div className="flex flex-wrap gap-2"><Link href="/employees" className={buttonClassName({ variant: "ghost" })}><ArrowLeft className="h-4 w-4" /> Directory</Link>{actor.permissions.includes("employees.update") ? <a href="#edit" className={buttonClassName({ variant: "secondary" })}>Edit employee</a> : null}</div>} />
+    <PageHeader eyebrow="Employee Management" title={displayName} description={`${employee.employeeNumber} · ${employee.workEmail}`} actions={<div className="flex flex-wrap gap-2"><AiContextLink module="employees" type="employee" id={employee.id} enabled={actor.permissions.includes("ai.use") && actor.permissions.includes("ai.employees.use")} /><Link href="/employees" className={buttonClassName({ variant: "ghost" })}><ArrowLeft className="h-4 w-4" /> Directory</Link>{actor.permissions.includes("employees.update") ? <a href="#edit" className={buttonClassName({ variant: "secondary" })}>Edit employee</a> : null}</div>} />
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><StatCard label="Employment status" value={<Badge tone={employee.status === "ACTIVE" ? "success" : employee.status === "SUSPENDED" ? "danger" : "warning"}>{employeeStatusLabels[employee.status as keyof typeof employeeStatusLabels] || employee.status}</Badge>} hint={employeeTypeLabels[employee.employmentType as keyof typeof employeeTypeLabels] || employee.employmentType} icon={<UserRound className="h-5 w-5" />} /><StatCard label="Department" value={department?.name || "Unassigned"} hint={team?.name || "No team"} icon={<BriefcaseBusiness className="h-5 w-5" />} /><StatCard label="Assigned assets" value={assets.length} hint={`${endpoints.length} endpoints`} icon={<Laptop className="h-5 w-5" />} /><StatCard label="Open tickets" value={tickets.filter((ticket: any) => !["RESOLVED", "CLOSED"].includes(ticket.status)).length} hint="Requested by this employee" icon={<ShieldAlert className="h-5 w-5" />} /></div>
     <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
       <div className="space-y-6">

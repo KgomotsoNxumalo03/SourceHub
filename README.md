@@ -245,3 +245,27 @@ npm.cmd run seed
 Run the seed only against the Firebase Emulator Suite or an approved development project. The seed includes fictional KPI definitions, aggregate and snapshot examples, a saved executive report, schedule, execution, and export records. Actual outbound email or FCM delivery is intentionally not fabricated by the scheduler; scheduled exports create auditable private artifacts and execution records for the deployed notification provider to deliver.
 
 Reporting validation includes pure calculation and CSV-injection tests in `tests/reporting.test.ts`, plus the repository-wide lint, typecheck, unit tests, Functions build, and Next production build. Emulator rule tests remain dependent on the Firebase CLI and Java runtime being installed on the development machine.
+
+## Phase 13: SourceHub AI
+
+SourceHub AI is available at `/ai` and from the global `Ask AI` control when the signed-in user has `ai.use`. The assistant supports conversation history, context indicators, suggested prompts, authorised source references, feedback, archive/delete, provider metadata, rate limits, redaction warnings, and structured proposed drafts. Context can be supplied with `contextModule`, `contextType`, and `contextId`; the server rechecks the record and module permission before retrieving it.
+
+AI access is server-orchestrated in `lib/ai.ts` and uses the allowlisted registry in `lib/ai-tools.ts`. Tools include ticket, client, asset, endpoint, project, Knowledge Base, approved report, and KPI-definition retrieval. Tools accept validated schemas, enforce workspace and module permissions, cap result sizes, return controlled source references, and never execute arbitrary Firestore queries. Finance requests use approved Phase 10 report metrics rather than asking a model to calculate authoritative totals from raw line items.
+
+The provider abstraction is in `lib/ai-provider.ts`. `AI_PROVIDER=dev` is a deterministic development-only adapter and is rejected when `NODE_ENV=production`. `AI_PROVIDER=http` sends a redacted, bounded request to the configured server-side provider endpoint using `AI_PROVIDER_API_KEY`; the browser never receives that key and no provider-specific model is hard-coded. Provider, model, prompt version, latency, token counts where supplied, and success state are recorded without storing provider credentials or full sensitive prompts in ordinary logs.
+
+Retrieved content is treated as untrusted data. `lib/ai-redaction.ts` removes secret-like values before provider submission, detects prompt-injection language, withholds suspicious source content, and marks the request for audit. AI responses are not authoritative. Draft ticket replies, draft Knowledge Base content, and draft report narratives are stored as proposed actions; explicit confirmation creates an immutable execution record stating that the draft is prepared for manual review. No client communication, endpoint command, financial mutation, role change, deletion, invoice action, or automatic publication is performed by AI.
+
+Phase 13 collections are `aiConversations`, `aiMessages`, `aiToolExecutions`, `aiActionProposals`, `aiActionExecutions`, `aiUsage`, `aiFeedback`, `aiSettings`, `aiFeaturePolicies`, `aiPromptVersions`, `aiRetrievalIndexes`, `aiEmbeddingJobs`, `aiAuditEvents`, and `aiRateLimits`. Firestore rules allow users to read only their own conversations, messages, tools, proposals, executions, feedback and usage; administrative settings and audit reads require exact AI permissions. All browser writes to AI records are denied. Retention cleanup is scheduled in `runScheduledAiRetention` in `functions/src/index.ts`.
+
+Configure the following server-side variables from `.env.example`: `AI_ENABLED`, `AI_EMERGENCY_DISABLED`, `AI_PROVIDER`, `AI_PROVIDER_URL`, `AI_PROVIDER_API_KEY`, `AI_MODEL`, `AI_ALLOWED_MODULES`, `AI_MAX_PROMPT_CHARS`, `AI_MAX_OUTPUT_TOKENS`, `AI_MAX_TOOL_CALLS`, `AI_DAILY_REQUEST_LIMIT`, `AI_MONTHLY_REQUEST_LIMIT`, `AI_RETENTION_DAYS`, and `AI_REQUEST_TIMEOUT_MS`. For local development, leave `AI_PROVIDER=dev`. For production, configure a provider endpoint and secret through the deployment secret manager, set `AI_PROVIDER=http`, and never commit the key.
+
+After deploying the updated rules and indexes, run the idempotent superuser seed to add new report and AI permissions to existing seeded roles, then run the development data seed only against an emulator or approved development project:
+
+```powershell
+npm.cmd run seed:superusers
+npm.cmd run seed
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage,functions --project <firebase-project-id>
+```
+
+Phase 13 security tests cover secret redaction, prompt-injection detection, bounded schemas, and existing platform regressions in `tests/ai.test.ts` and the repository test suite. Firebase Emulator rules and Functions tests require the Firebase CLI and Java runtime, which are not installed on the current development machine. The current implementation intentionally does not claim semantic embeddings, automatic email/FCM delivery, autonomous operational mutations, or employee surveillance; those remain guarded future integrations.

@@ -11,6 +11,7 @@ import {
   PanelLeftOpen,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import { logoutAction } from "@/lib/actions/auth";
@@ -257,6 +258,7 @@ export function AppShell({
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                if (item.permission && !user.permissions.includes(item.permission)) return null;
                 if ("comingSoon" in item && item.comingSoon) {
                   return (
                     <div
@@ -335,6 +337,7 @@ export function AppShell({
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {user.permissions.includes("ai.use") ? <Link href="/ai" className="inline-flex h-10 items-center gap-2 rounded-xl border border-sourcehub-border bg-white px-3 text-sm font-medium text-sourcehub-primary hover:border-sourcehub-primary"><Sparkles className="h-4 w-4" /> <span className="hidden md:inline">Ask AI</span></Link> : null}
                 <DropdownMenu
                   align="right"
                   trigger={
@@ -489,6 +492,7 @@ export function AppShell({
             <nav className="space-y-1 px-3">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
+                if (item.permission && !user.permissions.includes(item.permission)) return null;
                 if ("comingSoon" in item && item.comingSoon) {
                   return (
                     <div key={item.label} className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-white/45">

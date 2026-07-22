@@ -25,6 +25,7 @@ import {
 } from "@/lib/projects";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { buttonClassName } from "@/lib/button";
+import { AiContextLink } from "@/components/ai-context-link";
 import {
   addProjectDependencyAction,
   addProjectMemberAction,
@@ -223,6 +224,7 @@ export default async function ProjectDetailPage({
         }
         actions={
           <div className="flex flex-wrap gap-2">
+            <AiContextLink module="projects" type="project" id={project.id} enabled={actor.permissions.includes("ai.use") && actor.permissions.includes("ai.projects.use")} />
             <Link
               href="/projects"
               className={buttonClassName({ variant: "ghost" })}
