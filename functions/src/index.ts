@@ -1,5 +1,6 @@
 import { logger } from "firebase-functions";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
@@ -447,4 +448,139 @@ export const runScheduledAiRetention = onSchedule("every day 02:15", async () =>
     deleted += 1;
   }
   logger.info("AI retention sweep", { conversations: conversations.size, deleted });
+});
+
+function eventData(value: any) {
+  return value?.data ? value.data() : null;
+}
+
+function eventTriggerKey(collection: string, before: any, after: any) {
+  if (!before) return `${collection}.created`;
+  if (before.status !== after.status && after.status) return `${collection}.status_changed`;
+  if (before.priority !== after.priority && after.priority) return `${collection}.priority_changed`;
+  return `${collection}.updated`;
+}
+
+async function normaliseAutomationEvent(collection: string, event: any) {
+  const after = eventData(event.data?.after);
+  const before = eventData(event.data?.before);
+  if (!after?.workspaceId) return;
+  const triggerKey = eventTriggerKey(collection, before, after);
+  const eventId = String(event.id ?? `${collection}:${event.params?.[`${collection}Id`] ?? "event"}:${Date.now()}`);
+  const triggerId = `${after.workspaceId}:${eventId}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 500);
+  const triggerReference = db.collection("automationTriggers").doc(triggerId);
+  const existing = await triggerReference.get();
+  if (existing.exists) return;
+  await triggerReference.create({ id: triggerId, workspaceId: after.workspaceId, triggerEventId: eventId, triggerKey, payload: { recordId: event.params?.ticketId ?? event.params?.clientId ?? event.params?.assetId ?? event.params?.endpointId ?? event.params?.employeeId ?? event.params?.invoiceId ?? null, previous: before ?? {}, new: after, metadata: { source: "firestore", collection } }, status: "RECEIVED", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+}
+
+export const ingestTicketAutomationEvents = onDocumentWritten("tickets/{ticketId}", async (event) => normaliseAutomationEvent("ticket", event));
+export const ingestClientAutomationEvents = onDocumentWritten("clients/{clientId}", async (event) => normaliseAutomationEvent("client", event));
+export const ingestAssetAutomationEvents = onDocumentWritten("assets/{assetId}", async (event) => normaliseAutomationEvent("asset", event));
+export const ingestEndpointAutomationEvents = onDocumentWritten("endpoints/{endpointId}", async (event) => normaliseAutomationEvent("endpoint", event));
+export const ingestEmployeeAutomationEvents = onDocumentWritten("employees/{employeeId}", async (event) => normaliseAutomationEvent("employee", event));
+export const ingestInvoiceAutomationEvents = onDocumentWritten("invoices/{invoiceId}", async (event) => normaliseAutomationEvent("finance.invoice", event));
+
+async function queueAutomationTrigger(triggerDocument: FirebaseFirestore.QueryDocumentSnapshot) {
+  const trigger = triggerDocument.data();
+  if (trigger.status !== "RECEIVED" || !trigger.workspaceId) return false;
+  const workflows = await db.collection("automationWorkflows").where("workspaceId", "==", trigger.workspaceId).where("active", "==", true).where("triggerKey", "==", trigger.triggerKey).limit(50).get();
+  let queued = false;
+  for (const workflowDocument of workflows.docs) {
+    const workflow = workflowDocument.data();
+    if (!workflow.activeVersion) continue;
+    const versionDocument = await db.collection("automationVersions").doc(`${workflowDocument.id}:v:${workflow.activeVersion}`).get();
+    const definition = versionDocument.data()?.definition;
+    // Conditional events remain visible for the trusted application runner, which has the shared validator.
+    if (definition?.trigger?.conditions) continue;
+    const idempotencyId = `${trigger.workspaceId}:${workflowDocument.id}:${trigger.triggerEventId}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 500);
+    const idempotencyReference = db.collection("automationIdempotency").doc(idempotencyId);
+    const claimed = await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(idempotencyReference);
+      if (current.exists) return false;
+      transaction.create(idempotencyReference, { id: idempotencyId, workspaceId: trigger.workspaceId, workflowId: workflowDocument.id, triggerEventId: trigger.triggerEventId, status: "CLAIMED", expiresAt: new Date(Date.now() + 30 * 86400000), createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+      return true;
+    });
+    if (!claimed) continue;
+    const executionId = `execution_${triggerDocument.id}_${workflowDocument.id}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 500);
+    await db.collection("automationExecutions").doc(executionId).create({ id: executionId, workspaceId: trigger.workspaceId, workflowId: workflowDocument.id, workflowVersion: workflow.activeVersion, triggerKey: trigger.triggerKey, triggerEventId: trigger.triggerEventId, actorId: null, currentStep: 0, status: "QUEUED", input: trigger.payload, stepResults: [], retryCount: 0, parentExecutionId: null, childExecutionIds: [], correlationId: trigger.triggerEventId, causationId: null, idempotencyKey: idempotencyId, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), startedAt: null, completedAt: null, nextExecutionAt: null, error: null });
+    await idempotencyReference.update({ executionId, status: "QUEUED", updatedAt: FieldValue.serverTimestamp() });
+    queued = true;
+  }
+  await triggerDocument.ref.update({ status: queued ? "QUEUED" : "REVIEW_REQUIRED", updatedAt: FieldValue.serverTimestamp() });
+  return queued;
+}
+
+export const runScheduledAutomationTriggerMatching = onSchedule("every 5 minutes", async () => {
+  const triggers = await db.collection("automationTriggers").where("status", "==", "RECEIVED").limit(100).get();
+  let queued = 0;
+  for (const trigger of triggers.docs) if (await queueAutomationTrigger(trigger)) queued += 1;
+  logger.info("Automation trigger matching sweep", { received: triggers.size, queued });
+});
+
+async function processAutomationExecution(executionDocument: FirebaseFirestore.QueryDocumentSnapshot) {
+  const execution = executionDocument.data();
+  if (execution.status !== "QUEUED") return false;
+  const workflow = await db.collection("automationWorkflows").doc(execution.workflowId).get();
+  const version = await db.collection("automationVersions").doc(`${execution.workflowId}:v:${execution.workflowVersion}`).get();
+  const definition = version.data()?.definition;
+  if (!workflow.exists || !version.exists || !definition?.steps) { await executionDocument.ref.update({ status: "DEAD_LETTER", error: "Immutable workflow version unavailable.", completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); return false; }
+  const claimed = await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(executionDocument.ref);
+    if (current.data()?.status !== "QUEUED") return false;
+    transaction.update(executionDocument.ref, { status: "RUNNING", startedAt: current.data()?.startedAt ?? FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    return true;
+  });
+  if (!claimed) return false;
+  for (let index = Number(execution.currentStep ?? 0); index < Math.min(definition.steps.length, 40); index += 1) {
+    const step = definition.steps[index];
+    if (!step.enabled) continue;
+    const action = String(step.action ?? step.type);
+    if (["send_approved_email", "send_webhook", "notify_client_contact", "create_offboarding_task"].includes(action) || action === "require_approval" || step.type === "approval") {
+      const approvalId = `${executionDocument.id}:${step.id}`;
+      await db.collection("automationApprovals").doc(approvalId).set({ id: approvalId, workspaceId: execution.workspaceId, workflowId: execution.workflowId, workflowVersion: execution.workflowVersion, executionId: executionDocument.id, stepId: step.id, requesterId: execution.actorId, requestedAction: action, actionPayload: step.config ?? {}, affectedRecords: execution.input ?? {}, reason: step.config?.reason ?? "Approval required", status: "PENDING", deadlineAt: new Date(Date.now() + 48 * 3600000), createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await executionDocument.ref.update({ status: "WAITING_FOR_APPROVAL", currentStep: index, updatedAt: FieldValue.serverTimestamp() });
+      return true;
+    }
+    if (action === "delay" || action === "wait_until" || step.type === "delay") {
+      const nextExecutionAt = new Date(Date.now() + Math.min(Math.max(Number(step.config?.seconds ?? 60), 1), 2592000) * 1000);
+      await executionDocument.ref.update({ status: "WAITING", currentStep: index + 1, nextExecutionAt, updatedAt: FieldValue.serverTimestamp() });
+      return true;
+    }
+    if (["create_in_app_notification", "notify_user", "notify_manager", "notify_team"].includes(action)) {
+      const recipientId = String(step.config?.userId ?? execution.actorId ?? "");
+      const recipient = await db.collection("users").doc(recipientId).get();
+      if (!recipient.exists || recipient.data()?.workspaceId !== execution.workspaceId) { await executionDocument.ref.update({ status: "DEAD_LETTER", error: "Notification recipient is outside the workspace.", completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); return false; }
+      const notificationId = `notification_${executionDocument.id}_${step.id}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 500);
+      await db.collection("notifications").doc(notificationId).set({ id: notificationId, workspaceId: execution.workspaceId, userId: recipientId, type: "AUTOMATION", title: String(step.config?.title ?? "SourceHub automation"), message: String(step.config?.message ?? "An automation requires your attention.").slice(0, 2000), link: step.config?.link ?? null, readAt: null, createdAt: FieldValue.serverTimestamp() }, { merge: false });
+    } else {
+      await executionDocument.ref.update({ status: "DEAD_LETTER", error: `Action '${action}' requires a configured trusted provider.`, completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+      return false;
+    }
+    await db.collection("automationStepExecutions").doc(`${executionDocument.id}:${step.id}`).set({ id: `${executionDocument.id}:${step.id}`, workspaceId: execution.workspaceId, executionId: executionDocument.id, workflowId: execution.workflowId, workflowVersion: execution.workflowVersion, stepId: step.id, action, status: "COMPLETED", input: { configured: true }, output: { completed: true }, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  await executionDocument.ref.update({ status: "COMPLETED", currentStep: definition.steps.length, completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  return true;
+}
+
+export const runScheduledAutomationExecutions = onSchedule("every 5 minutes", async () => {
+  const executions = await db.collection("automationExecutions").where("status", "==", "QUEUED").limit(50).get();
+  let processed = 0;
+  for (const execution of executions.docs) if (await processAutomationExecution(execution)) processed += 1;
+  logger.info("Automation execution sweep", { queued: executions.size, processed });
+});
+
+export const runScheduledAutomationRetention = onSchedule("every day 03:15", async () => {
+  const expiry = new Date(Date.now() - 90 * 86400000);
+  const executions = await db.collection("automationExecutions").where("completedAt", "<", expiry).limit(200).get();
+  let deleted = 0;
+  for (const execution of executions.docs) {
+    const steps = await db.collection("automationStepExecutions").where("executionId", "==", execution.id).limit(100).get();
+    const batch = db.batch();
+    steps.docs.forEach((step) => batch.delete(step.ref));
+    batch.delete(execution.ref);
+    await batch.commit();
+    deleted += 1;
+  }
+  logger.info("Automation retention sweep", { candidates: executions.size, deleted });
 });

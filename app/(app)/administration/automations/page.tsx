@@ -1,133 +1,24 @@
 import Link from "next/link";
 
-import { createAutomationRuleAction, toggleAutomationRuleAction } from "@/lib/actions/automation";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "@/components/ui";
+import { getAutomationDashboard, listAutomationWorkflows } from "@/lib/automation-engine";
+import { currentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { buttonClassName } from "@/lib/button";
-import { requirePermission } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Input, PageHeader, Select, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow, Textarea } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
 
-export default async function AutomationRulesPage() {
-  await requirePermission("automation.view");
+function dateLabel(value: any) { const date = value?.toDate ? value.toDate() : value ? new Date(value) : null; return date && !Number.isNaN(date.getTime()) ? date.toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" }) : "Never"; }
+function statusTone(status: string) { return status === "ACTIVE" || status === "PUBLISHED" ? "success" : status === "ERROR" || status === "DISABLED" ? "danger" : status === "PAUSED" ? "warning" : "outline"; }
 
-  const rules = await prisma.automationRule.findMany({
-    where: { workspaceId: env.DEFAULT_WORKSPACE_ID },
-    orderBy: [{ active: "desc" }, { updatedAt: "desc" }],
-  });
-
+export default async function AutomationsPage() {
+  const user = await currentUser();
+  if (!user || (!hasPermission(user, "automations.view") && !hasPermission(user, "automation.view"))) return <EmptyState title="Access denied" description="You need automation monitoring permission to view this area." />;
+  const [dashboard, workflows] = await Promise.all([getAutomationDashboard(), listAutomationWorkflows()]);
+  const canCreate = hasPermission(user, "automations.create") || hasPermission(user, "automation.manage");
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Service Desk"
-        title="Automation rules"
-        description="Define repeatable service-desk automation and escalation behavior."
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>New rule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createAutomationRuleAction} className="grid gap-4 xl:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">Rule name</label>
-              <Input name="name" required placeholder="Critical breach escalation" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">Trigger</label>
-              <Input name="trigger" required placeholder="sla.breached" />
-            </div>
-            <div className="space-y-2 xl:col-span-2">
-              <label className="text-sm font-medium text-sourcehub-text">Description</label>
-              <Textarea name="description" placeholder="Describe when and why this rule fires." />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">Action</label>
-              <Select name="action" defaultValue="in_app_notification">
-                <option value="in_app_notification">In-app notification</option>
-                <option value="email_notification">Email notification</option>
-                <option value="technician_notification">Technician notification</option>
-                <option value="manager_notification">Manager notification</option>
-                <option value="team_reassignment">Team reassignment</option>
-                <option value="technician_reassignment">Technician reassignment</option>
-                <option value="priority_update">Priority update</option>
-                <option value="internal_note">Internal note</option>
-                <option value="webhook_event">Webhook event</option>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">Threshold percent</label>
-              <Input name="thresholdPercent" type="number" min={1} max={100} defaultValue={75} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">Target role</label>
-              <Input name="targetRole" placeholder="Service Desk Manager" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-sourcehub-text">State</label>
-              <Select name="active" defaultValue="true">
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </Select>
-            </div>
-            <div className="xl:col-span-2">
-              <Button type="submit">Create rule</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing rules</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {rules.length === 0 ? (
-            <div className="p-6">
-              <EmptyState title="No automation rules" description="Create your first escalation or ticket automation rule." />
-            </div>
-          ) : (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeadCell>Rule</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                  <TableHeadCell>Trigger</TableHeadCell>
-                  <TableHeadCell>Action</TableHeadCell>
-                  <TableHeadCell>Updated</TableHeadCell>
-                  <TableHeadCell>Toggle</TableHeadCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>
-                      <p className="font-semibold text-sourcehub-text">{rule.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">{rule.description ?? "No description"}</p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge tone={rule.active ? "success" : "outline"}>{rule.active ? "Active" : "Inactive"}</Badge>
-                    </TableCell>
-                    <TableCell>{rule.trigger}</TableCell>
-                    <TableCell>{rule.action}</TableCell>
-                    <TableCell>{formatDateTime(rule.updatedAt)}</TableCell>
-                    <TableCell>
-                      <form action={toggleAutomationRuleAction}>
-                        <input type="hidden" name="id" value={rule.id} />
-                        <input type="hidden" name="active" value={String(!rule.active)} />
-                        <Button type="submit" variant="ghost" size="sm">
-                          {rule.active ? "Deactivate" : "Activate"}
-                        </Button>
-                      </form>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <PageHeader eyebrow="Automation Engine" title="Automations" description="Design controlled workflows that run on the trusted SourceHub server." actions={<div className="flex flex-wrap gap-2"><Link className={buttonClassName({ variant: "outline", size: "sm" })} href="/administration/automations/monitoring">Monitoring</Link><Link className={buttonClassName({ variant: "outline", size: "sm" })} href="/administration/automations/templates">Templates</Link>{canCreate ? <Link className={buttonClassName({ size: "sm" })} href="/administration/automations/new">New workflow</Link> : null}</div>} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Active workflows", dashboard.counts.active], ["Executions today", dashboard.counts.executionsToday], ["Waiting", dashboard.counts.waitingExecutions], ["Dead letter", dashboard.counts.deadLetterExecutions]].map(([label, value]) => <Card key={label as string}><CardContent><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold text-sourcehub-text">{value}</p></CardContent></Card>)}</div>
+      <Card><CardHeader><CardTitle>Workflow catalogue</CardTitle></CardHeader><CardContent className="p-0">{workflows.length === 0 ? <div className="p-6"><EmptyState title="No workflow drafts" description="Start with a template or create a controlled workflow from the builder." action={canCreate ? <Link className={buttonClassName({ size: "sm" })} href="/administration/automations/new">Create workflow</Link> : null} /></div> : <Table><TableHead><TableRow><TableHeadCell>Workflow</TableHeadCell><TableHeadCell>Trigger</TableHeadCell><TableHeadCell>Status</TableHeadCell><TableHeadCell>Version</TableHeadCell><TableHeadCell>Last executed</TableHeadCell><TableHeadCell>Owner</TableHeadCell></TableRow></TableHead><TableBody>{workflows.map((workflow: any) => <TableRow key={workflow.id}><TableCell><Link className="font-semibold text-sourcehub-primary hover:underline" href={`/administration/automations/${workflow.id}`}>{workflow.name}</Link><p className="mt-1 text-xs text-slate-500">{workflow.reference} · {workflow.module}</p></TableCell><TableCell>{workflow.triggerKey}</TableCell><TableCell><Badge tone={statusTone(workflow.status) as any}>{workflow.status}</Badge></TableCell><TableCell>Draft {workflow.draftVersion ?? "-"} · Published {workflow.publishedVersion ?? "-"}</TableCell><TableCell>{dateLabel(workflow.lastExecutedAt)}</TableCell><TableCell>{workflow.ownerId === user.id ? "You" : workflow.ownerId}</TableCell></TableRow>)}</TableBody></Table>}</CardContent></Card>
     </div>
   );
 }

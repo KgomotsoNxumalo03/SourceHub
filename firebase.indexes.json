@@ -609,6 +609,16 @@
     ,{ "collectionGroup": "aiActionExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "aiAuditEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "aiRateLimits", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "period", "order": "ASCENDING" }, { "fieldPath": "periodKey", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "automationWorkflows", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "active", "order": "ASCENDING" }, { "fieldPath": "triggerKey", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationWorkflows", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationVersions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "workflowId", "order": "ASCENDING" }, { "fieldPath": "version", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "nextExecutionAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "automationExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "workflowId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationStepExecutions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "executionId", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "automationApprovals", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "automationSchedules", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "nextExecutionAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "automationDeadLetters", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }

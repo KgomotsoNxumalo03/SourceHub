@@ -415,12 +415,65 @@ service cloud.firestore {
     }
 
     match /automationRules/{ruleId} {
-      allow read: if hasPermission("automation.view");
-      allow write: if hasPermission("automation.manage");
+      allow read: if hasPermission("automation.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
     }
 
     match /automationExecutions/{executionId} {
-      allow read: if hasPermission("automation.view");
+      allow read: if (hasPermission("automation.view") || hasPermission("automations.view")) && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+
+    match /automationWorkflows/{workflowId} {
+      allow read: if (hasPermission("automations.view") || hasPermission("automation.view")) && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationVersions/{versionId} {
+      allow read: if (hasPermission("automations.review") || hasPermission("automations.view")) && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationTriggers/{triggerId} {
+      allow read: if hasPermission("automations.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationStepExecutions/{stepExecutionId} {
+      allow read: if hasPermission("automations.audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationApprovals/{approvalId} {
+      allow read: if hasPermission("automations.approve") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationSchedules/{scheduleId} {
+      allow read: if hasPermission("automations.monitor.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationIdempotency/{keyId} {
+      allow read: if hasPermission("automations.audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationDeadLetters/{deadLetterId} {
+      allow read: if hasPermission("automations.audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationTemplates/{templateId} {
+      allow read: if hasPermission("automations.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationWebhookConfigs/{webhookId} {
+      allow read: if hasPermission("automations.webhooks.manage") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationWebhookDeliveries/{deliveryId} {
+      allow read: if hasPermission("automations.audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationActivities/{activityId} {
+      allow read: if hasPermission("automations.audit.view") && workspaceMatches(resource.data.workspaceId);
+      allow write: if false;
+    }
+    match /automationUsage/{usageId} {
+      allow read: if hasPermission("automations.monitor.view") && workspaceMatches(resource.data.workspaceId);
       allow write: if false;
     }
 
