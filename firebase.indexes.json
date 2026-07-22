@@ -648,6 +648,24 @@
     ,{ "collectionGroup": "featureFlagHistory", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "flagId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "maintenanceWindows", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "startAt", "order": "ASCENDING" }] }
     ,{ "collectionGroup": "enterpriseAuditEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "action", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialTenants", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "lifecycleState", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "tenantMemberships", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "tenantInvitations", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "tenantProvisioningJobs", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialSubscriptions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "lifecycleState", "order": "ASCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialBillingEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "processedAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialUsageEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "metric", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialUsageDaily", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "periodKey", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialUsageMonthly", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "periodKey", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialUsageQuotas", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "metric", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialOnboarding", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialIntegrationInstallations", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialDataJobs", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialExports", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialImports", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "commercialLifecycleJobs", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "deletionAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialSupportSessions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tenantId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "commercialOperationalMetrics", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "periodKey", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }

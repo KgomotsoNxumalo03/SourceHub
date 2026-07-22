@@ -8,6 +8,7 @@ import { collectionNames } from "@/lib/collections";
 import { firestoreAdmin } from "@/lib/db";
 import { getSessionToken, hashToken } from "@/lib/session";
 import { hasPermission, hasRole, type CurrentUser } from "@/lib/permissions";
+import { env } from "@/lib/env";
 import { cache } from "react";
 
 async function getSessionRecordByHash(tokenHash: string) {
@@ -77,6 +78,7 @@ async function resolveCurrentUser(): Promise<CurrentUser | null> {
 
   return {
     id: session.user.id,
+    workspaceId: (session.user as any).workspaceId ?? env.DEFAULT_WORKSPACE_ID,
     employeeNumber: session.user.employeeNumber,
     firstName: session.user.firstName,
     lastName: session.user.lastName,

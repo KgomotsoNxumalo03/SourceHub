@@ -16,6 +16,10 @@ service cloud.firestore {
       return signedIn() && request.auth.token.workspaceId == workspaceId;
     }
 
+    function tenantMatches(tenantId) {
+      return signedIn() && request.auth.token.tenantId == tenantId && request.auth.token.workspaceId == tenantId;
+    }
+
     function portalMatches(clientId) {
       return signedIn()
         && request.auth.token.portal == true
@@ -1107,6 +1111,151 @@ service cloud.firestore {
     }
     match /enterpriseAuditEvents/{id} {
       allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+
+    // Commercial records require an explicit tenant claim and remain server-authoritative.
+    match /commercialTenants/{id} {
+      allow read: if (tenantMatches(resource.data.tenantId) && hasPermission("tenant.settings.manage")) || hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /tenantMemberships/{id} {
+      allow read: if (tenantMatches(resource.data.tenantId) && (resource.data.userId == request.auth.uid || hasPermission("tenant.members.manage"))) || hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /tenantInvitations/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.members.manage");
+      allow write: if false;
+    }
+    match /tenantProvisioningJobs/{id} {
+      allow read: if hasPermission("commercial.platform.view") || (tenantMatches(resource.data.tenantId) && hasPermission("tenant.settings.manage"));
+      allow write: if false;
+    }
+    match /tenantSettings/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && (hasPermission("tenant.settings.manage") || hasPermission("tenant.entitlements.view"));
+      allow write: if false;
+    }
+    match /tenantBranding/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.settings.manage");
+      allow write: if false;
+    }
+    match /tenantDomains/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.settings.manage");
+      allow write: if false;
+    }
+    match /commercialReadiness/{id} {
+      allow read: if hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /commercialPlans/{id} {
+      allow read: if signedIn() && (hasPermission("commercial.platform.view") || hasPermission("tenant.entitlements.view"));
+      allow write: if false;
+    }
+    match /commercialPlanVersions/{id} {
+      allow read: if signedIn() && (hasPermission("commercial.platform.view") || hasPermission("tenant.entitlements.view"));
+      allow write: if false;
+    }
+    match /commercialFeatures/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /commercialAddons/{id} {
+      allow read: if signedIn() && hasPermission("tenant.entitlements.view");
+      allow write: if false;
+    }
+    match /commercialTrials/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.billing.view");
+      allow write: if false;
+    }
+    match /commercialSubscriptions/{id} {
+      allow read: if (tenantMatches(resource.data.tenantId) && (hasPermission("tenant.billing.view") || hasPermission("tenant.entitlements.view"))) || hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /commercialEntitlements/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.entitlements.view");
+      allow write: if false;
+    }
+    match /commercialTenantOverrides/{id} {
+      allow read: if hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /commercialBillingCustomers/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.billing.view");
+      allow write: if false;
+    }
+    match /commercialBillingEvents/{id} {
+      allow read: if hasPermission("commercial.platform.view") || (tenantMatches(resource.data.tenantId) && hasPermission("tenant.billing.view"));
+      allow write: if false;
+    }
+    match /commercialBillingActions/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.billing.view");
+      allow write: if false;
+    }
+    match /commercialInvoices/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.billing.view");
+      allow write: if false;
+    }
+    match /commercialUsageEvents/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.usage.view");
+      allow write: if false;
+    }
+    match /commercialUsageDaily/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.usage.view");
+      allow write: if false;
+    }
+    match /commercialUsageMonthly/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.usage.view");
+      allow write: if false;
+    }
+    match /commercialUsageQuotas/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && (hasPermission("tenant.usage.view") || hasPermission("tenant.entitlements.view"));
+      allow write: if false;
+    }
+    match /commercialOnboarding/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.onboarding.manage");
+      allow write: if false;
+    }
+    match /commercialIntegrations/{id} {
+      allow read: if hasPermission("commercial.platform.view");
+      allow write: if false;
+    }
+    match /commercialIntegrationInstallations/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.integrations.manage");
+      allow write: if false;
+    }
+    match /commercialIntegrationSecrets/{id} {
+      allow read, write: if false;
+    }
+    match /commercialDataJobs/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && (hasPermission("tenant.exports.manage") || hasPermission("tenant.imports.manage"));
+      allow write: if false;
+    }
+    match /commercialExports/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.exports.manage");
+      allow write: if false;
+    }
+    match /commercialImports/{id} {
+      allow read: if tenantMatches(resource.data.tenantId) && hasPermission("tenant.imports.manage");
+      allow write: if false;
+    }
+    match /commercialLifecycleJobs/{id} {
+      allow read: if hasPermission("commercial.platform.view") || (tenantMatches(resource.data.tenantId) && hasPermission("tenant.lifecycle.manage"));
+      allow write: if false;
+    }
+    match /commercialSupportSessions/{id} {
+      allow read: if hasPermission("commercial.platform.view") || (tenantMatches(resource.data.tenantId) && hasPermission("tenant.audit.view"));
+      allow write: if false;
+    }
+    match /commercialOperationalMetrics/{id} {
+      allow read: if hasPermission("commercial.operations.view");
+      allow write: if false;
+    }
+    match /commercialChangelog/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /commercialMigrationJobs/{id} {
+      allow read: if hasPermission("commercial.migrations.manage");
       allow write: if false;
     }
 

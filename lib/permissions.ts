@@ -2,6 +2,7 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export type CurrentUser = {
   id: string;
+  workspaceId?: string;
   employeeNumber: string;
   firstName: string;
   lastName: string;

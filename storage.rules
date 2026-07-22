@@ -16,6 +16,10 @@ service firebase.storage {
       return signedIn() && request.auth.token.workspaceId == workspaceId;
     }
 
+    function tenantMatches(tenantId) {
+      return signedIn() && request.auth.token.tenantId == tenantId && request.auth.token.workspaceId == tenantId;
+    }
+
     function portalMatches(clientId) {
       return signedIn()
         && request.auth.token.portal == true
@@ -94,6 +98,11 @@ service firebase.storage {
     // Enterprise backup and export objects are managed by Admin SDK/Functions only.
     match /workspaces/{workspaceId}/enterprise/{allPaths=**} {
       allow read: if workspaceMatches(workspaceId) && hasPermission("backups.view");
+      allow write: if false;
+    }
+
+    match /workspaces/{tenantId}/commercial/{allPaths=**} {
+      allow read: if tenantMatches(tenantId) && (hasPermission("tenant.exports.manage") || hasPermission("tenant.branding.manage"));
       allow write: if false;
     }
 

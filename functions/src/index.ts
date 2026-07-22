@@ -752,3 +752,123 @@ export const runScheduledEnterpriseContinuityChecks = onSchedule("every day 05:0
   }
   logger.info("Enterprise continuity check", { workspaces: workspaces.size, notReady });
 });
+
+const commercialDeletionCollections = [
+  "commercialTenants", "tenantMemberships", "tenantInvitations", "tenantProvisioningJobs", "tenantSettings", "tenantBranding", "tenantDomains", "commercialSubscriptions", "commercialEntitlements", "commercialTenantOverrides", "commercialBillingCustomers", "commercialBillingActions", "commercialInvoices", "commercialUsageDaily", "commercialUsageMonthly", "commercialUsageQuotas", "commercialOnboarding", "commercialIntegrationInstallations", "commercialDataJobs", "commercialExports", "commercialImports", "commercialSupportSessions", "commercialOperationalMetrics",
+];
+
+export const runScheduledCommercialProvisioning = onSchedule("every 5 minutes", async () => {
+  if (process.env.COMMERCIAL_SAAS_ENABLED !== "true") return;
+  const jobs = await db.collection("tenantProvisioningJobs").where("status", "==", "QUEUED").limit(50).get();
+  let completed = 0;
+  for (const jobDocument of jobs.docs) {
+    const claimed = await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(jobDocument.ref);
+      if (current.data()?.status !== "QUEUED") return false;
+      transaction.update(jobDocument.ref, { status: "RUNNING", attempts: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
+      return true;
+    });
+    if (!claimed) continue;
+    const tenantId = String(jobDocument.data().tenantId);
+    await db.collection("commercialOnboarding").doc(tenantId).set({ id: tenantId, tenantId, workspaceId: tenantId, currentStep: "organization", completedSteps: [], skippedSteps: [], essentialModules: [], status: "IN_PROGRESS", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("commercialTenants").doc(tenantId).set({ lifecycleState: "TRIAL", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("commercialSubscriptions").doc(tenantId).set({ lifecycleState: "TRIAL", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await jobDocument.ref.update({ status: "COMPLETED", currentStep: "ready", completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    completed += 1;
+  }
+  logger.info("Commercial provisioning sweep", { queued: jobs.size, completed });
+});
+
+export const runScheduledCommercialUsageAggregation = onSchedule("every 15 minutes", async () => {
+  if (process.env.COMMERCIAL_SAAS_ENABLED !== "true") return;
+  const since = new Date(Date.now() - 32 * 86400000);
+  const events = await db.collection("commercialUsageEvents").where("createdAt", ">=", since).limit(5000).get();
+  const aggregates = new Map<string, { tenantId: string; metric: string; day: string; month: string; quantity: number }>();
+  for (const document of events.docs) {
+    const event = document.data();
+    const createdAt = asDate(event.createdAt);
+    if (!createdAt || !event.tenantId || !event.metric) continue;
+    const day = createdAt.toISOString().slice(0, 10);
+    const month = day.slice(0, 7);
+    const key = `${event.tenantId}:${event.metric}:${day}`;
+    const current = aggregates.get(key) ?? { tenantId: String(event.tenantId), metric: String(event.metric), day, month, quantity: 0 };
+    current.quantity += Number(event.quantity ?? 0);
+    aggregates.set(key, current);
+  }
+  const batch = db.batch();
+  for (const aggregate of aggregates.values()) {
+    const dailyId = `${aggregate.tenantId}:${aggregate.metric}:${aggregate.day}`.replace(/[^a-zA-Z0-9:_-]/g, "_");
+    const monthlyId = `${aggregate.tenantId}:${aggregate.metric}:${aggregate.month}`.replace(/[^a-zA-Z0-9:_-]/g, "_");
+    batch.set(db.collection("commercialUsageDaily").doc(dailyId), { id: dailyId, tenantId: aggregate.tenantId, workspaceId: aggregate.tenantId, metric: aggregate.metric, periodKey: aggregate.day, quantity: aggregate.quantity, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    batch.set(db.collection("commercialUsageMonthly").doc(monthlyId), { id: monthlyId, tenantId: aggregate.tenantId, workspaceId: aggregate.tenantId, metric: aggregate.metric, periodKey: aggregate.month, quantity: aggregate.quantity, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  if (aggregates.size) await batch.commit();
+  logger.info("Commercial usage aggregation sweep", { events: events.size, aggregates: aggregates.size });
+});
+
+export const runScheduledCommercialLifecycle = onSchedule("every hour", async () => {
+  if (process.env.COMMERCIAL_SAAS_ENABLED !== "true") return;
+  const now = new Date();
+  const trials = await db.collection("commercialSubscriptions").where("lifecycleState", "==", "TRIAL").where("trialEndsAt", "<=", now).limit(100).get();
+  for (const subscription of trials.docs) {
+    const graceUntil = new Date(Date.now() + 7 * 86400000);
+    await subscription.ref.update({ lifecycleState: "GRACE_PERIOD", graceUntil, updatedAt: FieldValue.serverTimestamp() });
+    await db.collection("commercialTenants").doc(subscription.id).set({ lifecycleState: "GRACE_PERIOD", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  const grace = await db.collection("commercialSubscriptions").where("lifecycleState", "==", "GRACE_PERIOD").where("graceUntil", "<=", now).limit(100).get();
+  for (const subscription of grace.docs) {
+    await subscription.ref.update({ lifecycleState: "SUSPENDED", updatedAt: FieldValue.serverTimestamp() });
+    await db.collection("commercialTenants").doc(subscription.id).set({ lifecycleState: "SUSPENDED", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  logger.info("Commercial lifecycle sweep", { trialsExpired: trials.size, graceExpired: grace.size });
+});
+
+export const runScheduledCommercialRetention = onSchedule("every day 04:45", async () => {
+  const now = new Date();
+  const targets = [
+    ["commercialUsageEvents", "expiresAt"],
+    ["tenantInvitations", "expiresAt"],
+    ["commercialSupportSessions", "expiresAt"],
+    ["commercialExports", "expiresAt"],
+  ] as const;
+  let deleted = 0;
+  for (const [collection, field] of targets) {
+    const snapshot = await db.collection(collection).where(field, "<", now).limit(400).get();
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    if (!snapshot.empty) await batch.commit();
+    deleted += snapshot.size;
+  }
+  logger.info("Commercial retention sweep", { deleted });
+});
+
+export const runScheduledCommercialDeletion = onSchedule("every day 05:30", async () => {
+  const jobs = await db.collection("commercialLifecycleJobs").where("type", "==", "DELETION").where("status", "==", "SCHEDULED").where("deletionAt", "<=", new Date()).limit(10).get();
+  let archived = 0;
+  for (const jobDocument of jobs.docs) {
+    const tenantId = String(jobDocument.data().tenantId);
+    if (tenantId === "source-it-services") { await jobDocument.ref.update({ status: "BLOCKED_INTERNAL_TENANT", updatedAt: FieldValue.serverTimestamp() }); continue; }
+    let deleted = 0;
+    let remaining = false;
+    for (const collection of commercialDeletionCollections) {
+      const snapshot = await db.collection(collection).where("tenantId", "==", tenantId).limit(200).get();
+      const batch = db.batch();
+      snapshot.docs.forEach((document) => batch.delete(document.ref));
+      if (snapshot.size === 200) remaining = true;
+      if (!snapshot.empty) await batch.commit();
+      deleted += snapshot.size;
+    }
+    if (remaining) await jobDocument.ref.update({ status: "SCHEDULED", deletedRecords: FieldValue.increment(deleted), nextRunAt: new Date(Date.now() + 60000), verification: { tenantScopedQuery: true, internalTenantProtected: true }, updatedAt: FieldValue.serverTimestamp() });
+    else { await jobDocument.ref.update({ status: "COMPLETED", deletedRecords: FieldValue.increment(deleted), verification: { tenantScopedQuery: true, internalTenantProtected: true }, completedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); archived += 1; }
+  }
+  logger.info("Commercial deletion sweep", { jobs: jobs.size, archived });
+});
+
+export const runScheduledCommercialOperations = onSchedule("every 30 minutes", async () => {
+  const tenants = await db.collection("commercialTenants").limit(500).get();
+  const counts: Record<string, number> = {};
+  tenants.docs.forEach((document) => { const state = String(document.data().lifecycleState ?? "UNKNOWN"); counts[state] = (counts[state] ?? 0) + 1; });
+  const periodKey = new Date().toISOString().slice(0, 13);
+  await db.collection("commercialOperationalMetrics").doc(periodKey).set({ id: periodKey, periodKey, tenantCount: tenants.size, lifecycleCounts: counts, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+  logger.info("Commercial operations snapshot", { tenants: tenants.size, lifecycleCounts: counts });
+});
