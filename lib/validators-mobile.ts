@@ -1,0 +1,7 @@
+import { z } from "zod";
+
+export const mobileLoginSchema = z.object({ email: z.string().trim().email(), password: z.string().min(8).max(200), deviceId: z.string().trim().min(8).max(160), platform: z.enum(["android", "ios", "web", "unknown"]), appVersion: z.string().trim().min(1).max(40) });
+export const mobilePushTokenSchema = z.object({ deviceId: z.string().trim().min(8).max(160), token: z.string().trim().min(10).max(4096), platform: z.enum(["android", "ios"]), permissionStatus: z.enum(["granted", "denied", "undetermined"]) });
+export const mobileSyncOperationSchema = z.object({ idempotencyKey: z.string().trim().min(8).max(200), type: z.enum(["ticket.reply", "ticket.note", "ticket.update", "notification.read", "attendance.clock_in", "attendance.clock_out", "attendance.break_start", "attendance.break_end", "task.update", "maintenance.create"]), payload: z.record(z.string(), z.unknown()).default({}), clientRecordedAt: z.string().datetime().optional(), baseUpdatedAt: z.string().optional() });
+export const mobileSyncSchema = z.object({ operations: z.array(mobileSyncOperationSchema).min(1).max(50) });
+export const mobileLocationSchema = z.object({ deviceId: z.string().trim().min(8).max(160), latitude: z.number().gte(-90).lte(90), longitude: z.number().gte(-180).lte(180), accuracyMetres: z.number().positive().max(10000), workLocationId: z.string().trim().optional(), purpose: z.enum(["attendance", "site_visit"]) });

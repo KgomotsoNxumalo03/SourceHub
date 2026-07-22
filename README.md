@@ -285,3 +285,22 @@ The monitoring area shows active and paused workflows, execution counts, waits, 
 Configure `AUTOMATION_ENABLED`, `AUTOMATION_EMERGENCY_DISABLED`, `AUTOMATION_MAX_STEPS`, `AUTOMATION_MAX_CONDITION_DEPTH`, `AUTOMATION_MAX_RETRIES`, `AUTOMATION_MAX_EXECUTION_MINUTES`, `AUTOMATION_MAX_CHILD_DEPTH`, `AUTOMATION_IDEMPOTENCY_RETENTION_DAYS`, `AUTOMATION_EXECUTION_RETENTION_DAYS`, `AUTOMATION_WEBHOOK_TIMEOUT_MS`, and `AUTOMATION_WEBHOOK_MAX_RECIPIENTS` from `.env.example`. Keep webhook signing secrets in the deployment secret manager rather than Firestore. Deploy the updated rules, indexes, and Functions before activating workflows.
 
 Phase 14 validation includes `tests/automation.test.ts` for nested conditions, unsafe property rejection, type-safe workflow validation, template escaping, high-risk approval flags, and dry-run behaviour. Repository lint, typecheck, the full 42-test suite, Functions build, Firebase JSON validation, and the Next production build passed. Firebase Emulator rule and scheduled-Functions execution tests remain dependent on the Firebase CLI and Java runtime being installed. The implementation intentionally does not claim a live outbound email provider, webhook secret manager, FCM delivery, or arbitrary operational mutation adapter; those integrations remain explicit trusted-provider work rather than unsafe mocks.
+
+## Phase 15: SourceHub Mobile
+
+The Expo React Native TypeScript application lives in `apps/mobile`. It supports role-aware technician, employee, and authorised client workflows for tickets, assets, attendance, project tasks, Knowledge Base content, notifications, QR scanning, camera attachments, and permission-gated AI assistance. The mobile client is a separate workspace so React Native types and native build tooling do not enter the Next.js server compilation.
+
+Mobile authentication uses the existing SourceHub credential authority through opaque bearer sessions. Session tokens are hashed at rest, expire and can be revoked per device, and every bootstrap, sync, upload, location, push-token, and AI request is re-authorised server-side against workspace and client scope. Firestore and Storage rules deny direct browser/mobile writes to authoritative mobile collections; trusted Next.js routes and Cloud Functions own writes and retention.
+
+Offline data is limited to an authorised bootstrap cache. Mutations are stored as bounded idempotent operations and reconciled by `/api/mobile/sync`; the server uses transaction-backed attendance locks and validates ticket, task, and asset ownership before applying them. Location is event-only and retained for a bounded period; the app does not implement continuous employee tracking. Photos are uploaded through the authenticated server route into private Storage paths.
+
+Run the mobile checks from the mobile directory:
+
+```powershell
+cd apps/mobile
+npm install
+npm run typecheck
+npm run export
+```
+
+Copy `apps/mobile/.env.example` to a local `.env`. Never place Firebase Admin credentials, provider keys, signing keys, or service-account files in the mobile workspace. Device push credentials, App Check native providers, and Android/iOS signing belong in the development-build or EAS environment. Emulator rule tests and native builds require the Firebase CLI, Java, and platform toolchains installed on the developer machine.

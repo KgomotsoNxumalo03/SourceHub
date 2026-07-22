@@ -83,6 +83,14 @@ service firebase.storage {
       allow write: if false;
     }
 
+    match /workspaces/{workspaceId}/mobile/{userId}/{fileName} {
+      allow read: if workspaceMatches(workspaceId) && request.auth.uid == userId && hasPermission("mobile.access");
+      allow write: if workspaceMatches(workspaceId) && request.auth.uid == userId
+        && (hasPermission("mobile.camera.use") || hasPermission("mobile.tickets.manage"))
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches("image/.*|application/pdf|text/plain|application/vnd.openxmlformats-officedocument.*");
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

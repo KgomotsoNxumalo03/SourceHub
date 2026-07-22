@@ -245,6 +245,16 @@ const collections = {
   aiEmbeddingJob: "aiEmbeddingJobs",
   aiAuditEvent: "aiAuditEvents",
   aiRateLimit: "aiRateLimits",
+  mobileDevice: "mobileDevices",
+  mobilePushToken: "mobilePushTokens",
+  mobileNotificationPreference: "mobileNotificationPreferences",
+  mobileSyncOperation: "mobileSyncOperations",
+  mobileSyncFailure: "mobileSyncFailures",
+  mobileSession: "mobileSessions",
+  mobileAppVersion: "mobileAppVersions",
+  mobileFeaturePolicy: "mobileFeaturePolicies",
+  mobileLocationEvent: "mobileLocationEvents",
+  mobileAuditEvent: "mobileAuditEvents",
 } as const;
 
 function convertValue(value: any): any {

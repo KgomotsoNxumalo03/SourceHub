@@ -221,6 +221,16 @@ export const collectionNames = {
   aiEmbeddingJobs: "aiEmbeddingJobs",
   aiAuditEvents: "aiAuditEvents",
   aiRateLimits: "aiRateLimits",
+  mobileDevices: "mobileDevices",
+  mobilePushTokens: "mobilePushTokens",
+  mobileNotificationPreferences: "mobileNotificationPreferences",
+  mobileSyncOperations: "mobileSyncOperations",
+  mobileSyncFailures: "mobileSyncFailures",
+  mobileSessions: "mobileSessions",
+  mobileAppVersions: "mobileAppVersions",
+  mobileFeaturePolicies: "mobileFeaturePolicies",
+  mobileLocationEvents: "mobileLocationEvents",
+  mobileAuditEvents: "mobileAuditEvents",
 } as const;
 
 export type CollectionName = (typeof collectionNames)[keyof typeof collectionNames];

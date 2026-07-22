@@ -1,0 +1,9 @@
+import { useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { router } from "expo-router";
+
+import { Button, Field } from "@mobile/components/ui";
+import { useAuth } from "@mobile/core/auth-context";
+import { styles } from "@mobile/theme";
+
+export default function SignInScreen() { const { login, loading, error } = useAuth(); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [localError, setLocalError] = useState<string | null>(null); async function submit() { setLocalError(null); try { await login(email, password); router.replace("/(tabs)"); } catch (caught: any) { setLocalError(caught?.message ?? "Unable to sign in."); } } return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}><ScrollView contentContainerStyle={[styles.content, { flexGrow: 1, justifyContent: "center", padding: 24 }]} keyboardShouldPersistTaps="handled"><View style={[styles.card, { gap: 18 }]}><View style={styles.header}><Text style={styles.eyebrow}>SourceHub Mobile</Text><Text style={styles.title}>Work securely, anywhere.</Text><Text style={styles.subtitle}>Sign in with your administrator-issued SourceHub credentials. Mobile permissions are checked again by the server.</Text></View>{localError || error ? <Text accessibilityRole="alert" style={styles.error}>{localError ?? error}</Text> : null}<Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" /><Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" /><Button label="Sign in" onPress={submit} loading={loading} /><Text style={styles.subtitle}>Never share your password. SourceHub stores the mobile session as an opaque protected token.</Text></View></ScrollView></KeyboardAvoidingView>; }

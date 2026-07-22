@@ -619,6 +619,12 @@
     ,{ "collectionGroup": "automationApprovals", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
     ,{ "collectionGroup": "automationSchedules", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "nextExecutionAt", "order": "ASCENDING" }] }
     ,{ "collectionGroup": "automationDeadLetters", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "mobileSessions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "tokenHash", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "mobilePushTokens", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    ,{ "collectionGroup": "mobileSyncOperations", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "mobileSyncFailures", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "mobileLocationEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+    ,{ "collectionGroup": "mobileAuditEvents", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "workspaceId", "order": "ASCENDING" }, { "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }

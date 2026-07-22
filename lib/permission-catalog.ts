@@ -264,6 +264,21 @@ export const permissionCatalog: PermissionCatalogEntry[] = [
   entry("reports.manage", "reporting", "Manage reporting definitions and jobs"),
   entry("reports.kpis.manage", "reporting", "Manage KPI definitions"),
   entry("reports.sensitive_fields.view", "reporting", "View sensitive reporting fields"),
+  entry("mobile.access", "mobile", "Access the SourceHub mobile application"),
+  entry("mobile.technician.access", "mobile", "Access technician mobile workflows"),
+  entry("mobile.employee.access", "mobile", "Access employee mobile workflows"),
+  entry("mobile.client.access", "mobile", "Access client portal mobile workflows"),
+  entry("mobile.tickets.manage", "mobile", "Manage authorised mobile ticket workflows"),
+  entry("mobile.assets.view", "mobile", "View authorised mobile assets"),
+  entry("mobile.assets.manage", "mobile", "Manage authorised mobile asset workflows"),
+  entry("mobile.networks.view", "mobile", "View authorised mobile network summaries"),
+  entry("mobile.attendance.use", "mobile", "Use mobile attendance workflows"),
+  entry("mobile.projects.use", "mobile", "Use mobile project workflows"),
+  entry("mobile.knowledge.use", "mobile", "Use mobile Knowledge Base workflows"),
+  entry("mobile.ai.use", "mobile", "Use the mobile AI assistant"),
+  entry("mobile.camera.use", "mobile", "Use camera and photo uploads in mobile"),
+  entry("mobile.location.use", "mobile", "Use authorised mobile location verification"),
+  entry("mobile.offline.use", "mobile", "Use controlled mobile offline workflows"),
 ];
 
 export const permissionGroups = Array.from(new Set(permissionCatalog.map((item) => item.group)));

@@ -1,0 +1,7 @@
+import { FlatList, Pressable, Text, View } from "react-native";
+import { useAuth } from "@mobile/core/auth-context";
+import { EmptyState, StatusBadge } from "@mobile/components/ui";
+import { operationKey } from "@mobile/core/mobile-core";
+import { styles } from "@mobile/theme";
+
+export default function NotificationsScreen() { const { bootstrap, enqueue } = useAuth(); const notifications = bootstrap?.notifications ?? []; return <FlatList data={notifications} keyExtractor={(item) => String(item.id)} contentContainerStyle={styles.content} ListHeaderComponent={<View style={styles.header}><Text style={styles.eyebrow}>Updates</Text><Text style={styles.title}>Notifications</Text><Text style={styles.subtitle}>Previews are intentionally brief and never contain secrets or credentials.</Text></View>} ListEmptyComponent={<EmptyState title="All clear" description="New authorised SourceHub notifications will appear here." />} renderItem={({ item }) => <Pressable onPress={() => item.readAt ? undefined : enqueue({ type: "notification.read", idempotencyKey: operationKey("notification.read", String(item.id)), payload: { notificationId: item.id } })} style={[styles.card, !item.readAt && { borderColor: "#9CC7EE" }]}><View style={styles.row}><Text style={styles.cardTitle}>{item.title ?? "SourceHub notification"}</Text>{!item.readAt ? <StatusBadge label="New" tone="success" /> : null}</View><Text style={styles.subtitle}>{item.message ?? "Open SourceHub for more detail."}</Text></Pressable>} />; }

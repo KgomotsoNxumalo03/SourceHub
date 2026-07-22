@@ -1,9 +1,10 @@
 import { logger } from "firebase-functions";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -583,4 +584,33 @@ export const runScheduledAutomationRetention = onSchedule("every day 03:15", asy
     deleted += 1;
   }
   logger.info("Automation retention sweep", { candidates: executions.size, deleted });
+});
+
+export const sendMobileNotification = onDocumentCreated("notifications/{notificationId}", async (event) => {
+  const notification = event.data?.data();
+  if (!notification?.workspaceId || !notification.userId) return;
+  const tokens = await db.collection("mobilePushTokens").where("workspaceId", "==", notification.workspaceId).where("userId", "==", notification.userId).where("status", "==", "ACTIVE").limit(20).get();
+  if (tokens.empty) return;
+  const tokenDocuments = tokens.docs;
+  const response = await getMessaging(app).sendEachForMulticast({ tokens: tokenDocuments.map((document) => String(document.data().token)), notification: { title: "SourceHub", body: "You have a new SourceHub notification." }, data: { notificationId: String(event.params.notificationId), link: typeof notification.link === "string" ? notification.link.slice(0, 500) : "" } });
+  for (let index = 0; index < response.responses.length; index += 1) {
+    const delivery = response.responses[index];
+    if (!delivery.success && ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(String(delivery.error?.code ?? ""))) await tokenDocuments[index].ref.update({ status: "INVALID", invalidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  }
+  logger.info("Mobile push delivery", { notificationId: event.params.notificationId, attempted: tokens.size, success: response.successCount, failure: response.failureCount });
+});
+
+export const runScheduledMobileRetention = onSchedule("every day 04:15", async () => {
+  const now = new Date();
+  const [sessions, locations, operations] = await Promise.all([
+    db.collection("mobileSessions").where("expiresAt", "<", now).limit(200).get(),
+    db.collection("mobileLocationEvents").where("expiresAt", "<", now).limit(200).get(),
+    db.collection("mobileSyncOperations").where("expiresAt", "<", now).limit(200).get(),
+  ]);
+  const batch = db.batch();
+  sessions.docs.forEach((document) => batch.delete(document.ref));
+  locations.docs.forEach((document) => batch.delete(document.ref));
+  operations.docs.forEach((document) => batch.delete(document.ref));
+  await batch.commit();
+  logger.info("Mobile retention sweep", { sessions: sessions.size, locations: locations.size, operations: operations.size });
 });

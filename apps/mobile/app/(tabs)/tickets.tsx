@@ -1,0 +1,9 @@
+import { Link } from "expo-router";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, Text, View } from "react-native";
+
+import { EmptyState, Field, StatusBadge } from "@mobile/components/ui";
+import { useAuth } from "@mobile/core/auth-context";
+import { colors, styles } from "@mobile/theme";
+
+export default function TicketsScreen() { const { bootstrap, user } = useAuth(); const [query, setQuery] = useState(""); const tickets = useMemo(() => (bootstrap?.tickets ?? []).filter((ticket) => `${ticket.subject} ${ticket.reference} ${ticket.description}`.toLowerCase().includes(query.toLowerCase())), [bootstrap?.tickets, query]); return <FlatList data={tickets} keyExtractor={(item) => String(item.id)} contentContainerStyle={styles.content} ListHeaderComponent={<View style={{ gap: 14 }}><View style={styles.header}><Text style={styles.eyebrow}>{user?.portalClientId ? "Client portal" : "Service desk"}</Text><Text style={styles.title}>Tickets</Text><Text style={styles.subtitle}>Only records authorised for your workspace and client scope are shown.</Text></View><Field label="Search tickets" value={query} onChangeText={setQuery} placeholder="Reference, subject or detail" /></View>} ListEmptyComponent={<EmptyState title="No tickets found" description="Try a different search or refresh when online." />} renderItem={({ item }) => <Link href={`/tickets/${item.id}`} asChild><Pressable style={styles.card}><View style={styles.row}><Text style={styles.cardTitle} numberOfLines={1}>{item.subject ?? item.reference}</Text><StatusBadge label={String(item.priority ?? item.status ?? "OPEN")} tone={item.priority === "URGENT" ? "danger" : "default"} /></View><Text style={styles.subtitle}>{item.reference ?? item.id}</Text><Text style={styles.subtitle} numberOfLines={2}>{item.description ?? ""}</Text></Pressable></Link>} />; }

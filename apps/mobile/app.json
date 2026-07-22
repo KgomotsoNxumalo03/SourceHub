@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "SourceHub",
+    "slug": "sourcehub-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "sourcehub",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.sourceitservices.sourcehub"
+    },
+    "android": {
+      "package": "co.sourceitservices.sourcehub",
+      "adaptiveIcon": { "backgroundColor": "#092058" }
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-camera", { "cameraPermission": "SourceHub uses the camera only when you scan an asset or capture supporting evidence." }],
+      ["expo-image-picker", { "photosPermission": "SourceHub uses photos only when you attach supporting evidence to an authorised record." }],
+      ["expo-location", { "locationWhenInUsePermission": "SourceHub uses your location only during an authorised attendance or site check-in." }],
+      ["expo-notifications", { "color": "#0F46B0" }],
+      "expo-secure-store"
+    ],
+    "extra": { "router": { "origin": false } }
+  }
+}

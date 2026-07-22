@@ -1,0 +1,8 @@
+import { useState } from "react";
+import { Alert, ScrollView, Text, View } from "react-native";
+import { Button, Field } from "@mobile/components/ui";
+import { mobileApi } from "@mobile/core/api";
+import { useAuth } from "@mobile/core/auth-context";
+import { styles } from "@mobile/theme";
+
+export default function AiScreen() { const { user } = useAuth(); const [prompt, setPrompt] = useState(""); const [answer, setAnswer] = useState(""); const [busy, setBusy] = useState(false); async function ask() { if (!prompt.trim()) return; setBusy(true); try { const response = await mobileApi.askAi({ prompt, context: { module: "mobile" } }); setAnswer(response.result?.text ?? "No answer was returned."); } catch (error: any) { Alert.alert("SourceHub AI", error.message); } finally { setBusy(false); } } return <ScrollView style={styles.screen} contentContainerStyle={styles.content}><View style={styles.header}><Text style={styles.eyebrow}>Authorised assistance</Text><Text style={styles.title}>SourceHub AI</Text><Text style={styles.subtitle}>Ask about records you are authorised to see. AI suggestions never perform mutations from the mobile app.</Text></View><View style={styles.card}><Field label="Question" value={prompt} onChangeText={setPrompt} placeholder="Summarise my open tickets" multiline textAlignVertical="top" style={[styles.input, { minHeight: 110, paddingTop: 14 }]} /><Button label="Ask SourceHub AI" onPress={ask} loading={busy} /></View>{answer ? <View style={styles.card}><Text style={styles.cardTitle}>Answer</Text><Text style={styles.subtitle}>{answer}</Text></View> : null}<Text style={styles.subtitle}>Signed in as {user?.email}</Text></ScrollView>; }

@@ -15,5 +15,12 @@ service-account*.json
 *.out
 *.tgz
 *.tsbuildinfo
+apps/mobile/.expo
+apps/mobile/dist
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.env
+apps/mobile/.env.*
+!apps/mobile/.env.example
 prisma/dev.db
 public/uploads

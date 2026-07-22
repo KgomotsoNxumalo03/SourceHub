@@ -960,6 +960,46 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /mobileDevices/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("mobile.access");
+      allow write: if false;
+    }
+    match /mobilePushTokens/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("mobile.access");
+      allow write: if false;
+    }
+    match /mobileNotificationPreferences/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("mobile.access");
+      allow write: if false;
+    }
+    match /mobileSyncOperations/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("mobile.offline.use");
+      allow write: if false;
+    }
+    match /mobileSyncFailures/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && resource.data.userId == request.auth.uid && hasPermission("mobile.offline.use");
+      allow write: if false;
+    }
+    match /mobileSessions/{id} {
+      allow read, write: if false;
+    }
+    match /mobileAppVersions/{id} {
+      allow read: if signedIn() && hasPermission("mobile.access");
+      allow write: if false;
+    }
+    match /mobileFeaturePolicies/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("mobile.access");
+      allow write: if false;
+    }
+    match /mobileLocationEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.userId == request.auth.uid || hasPermission("attendance.sensitive_view"));
+      allow write: if false;
+    }
+    match /mobileAuditEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (resource.data.userId == request.auth.uid || hasPermission("audit.view"));
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

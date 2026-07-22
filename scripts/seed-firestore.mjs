@@ -1465,6 +1465,10 @@ async function main() {
   await upsert(collectionNames.aiPromptVersions, "sourcehub-ai-v1", { id: "sourcehub-ai-v1", workspaceId, version: "sourcehub-ai-v1", purpose: "Secure SourceHub assistant baseline instructions.", active: true, createdBy: adminId, createdAt: now });
   await upsert(collectionNames.aiFeaturePolicies, "ai-policy-default", { id: "ai-policy-default", workspaceId, feature: "assistant", enabled: true, allowedRoles: ["Super Administrator", "Service Desk Manager", "Technician", "CRM Manager"], requiresConfirmationForActions: true, createdBy: adminId, updatedAt: now });
 
+  await upsert(collectionNames.mobileAppVersions, "mobile-version-android", { id: "mobile-version-android", workspaceId, platform: "android", currentVersion: env.MOBILE_CURRENT_VERSION, minimumSupportedVersion: env.MOBILE_MIN_SUPPORTED_VERSION, recommendedVersion: env.MOBILE_RECOMMENDED_VERSION, downloadUrl: null, releaseNotes: "SourceHub Mobile development release.", enabled: true, updatedAt: now });
+  await upsert(collectionNames.mobileAppVersions, "mobile-version-ios", { id: "mobile-version-ios", workspaceId, platform: "ios", currentVersion: env.MOBILE_CURRENT_VERSION, minimumSupportedVersion: env.MOBILE_MIN_SUPPORTED_VERSION, recommendedVersion: env.MOBILE_RECOMMENDED_VERSION, downloadUrl: null, releaseNotes: "SourceHub Mobile development release.", enabled: true, updatedAt: now });
+  await upsert(collectionNames.mobileFeaturePolicies, "mobile-policy-default", { id: "mobile-policy-default", workspaceId, feature: "mobile", enabled: true, emergencyDisabled: false, allowedRoles: ["Super Administrator", "Service Desk Manager", "Technician", "CRM Manager", "Employee"], updatedBy: adminId, updatedAt: now });
+
   console.log("Seeded SourceHub workspace, CRM, service desk, asset, network, employee, attendance, project, finance, knowledge, reporting, automation, and AI development data.");
 }
 
