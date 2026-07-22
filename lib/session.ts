@@ -5,9 +5,12 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 
 import { prisma } from "@/lib/db";
+import { collectionNames } from "@/lib/collections";
+import { firestoreAdmin } from "@/lib/db";
+import { env } from "@/lib/env";
 
 export const SESSION_COOKIE_NAME = "sourcehub_session";
-const SESSION_DAYS = 7;
+const SESSION_DAYS = env.ENTERPRISE_SESSION_DAYS;
 
 export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -41,6 +44,22 @@ export async function createSession(userId: string) {
     },
   });
 
+  await firestoreAdmin.collection(collectionNames.enterpriseSessions).doc(session.id).set({
+    id: session.id,
+    workspaceId: env.DEFAULT_WORKSPACE_ID,
+    userId,
+    tokenHash,
+    status: "ACTIVE",
+    authenticationMethod: "PASSWORD",
+    deviceType: requestHeaders.get("sec-ch-ua-mobile") === "?1" ? "MOBILE_BROWSER" : "BROWSER",
+    userAgent: userAgent?.slice(0, 300) ?? null,
+    ipAddress,
+    createdAt: session.createdAt,
+    lastActivityAt: new Date(),
+    expiresAt: session.expiresAt,
+    updatedAt: new Date(),
+  });
+
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
@@ -61,6 +80,7 @@ export async function getSessionToken() {
 export async function clearSession(token?: string | null) {
   const tokenValue = token ?? (await getSessionToken());
   if (tokenValue) {
+    await firestoreAdmin.collection(collectionNames.enterpriseSessions).where("tokenHash", "==", hashToken(tokenValue)).limit(5).get().then(async (snapshot) => Promise.all(snapshot.docs.map((document) => document.ref.update({ status: "REVOKED", revokedAt: new Date(), updatedAt: new Date() }))));
     await prisma.session.deleteMany({
       where: { tokenHash: hashToken(tokenValue) },
     });

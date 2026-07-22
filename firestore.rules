@@ -1000,6 +1000,116 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Enterprise identity, API, security and continuity records are server-authoritative.
+    match /enterpriseIdentityProviders/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.sso.view");
+      allow write: if false;
+    }
+    match /enterpriseIdentityLinks/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.sso.view");
+      allow write: if false;
+    }
+    match /enterpriseIdentityHistory/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+    match /enterpriseMfaPolicies/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.mfa.manage");
+      allow write: if false;
+    }
+    match /enterpriseMfaFactors/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.mfa.manage");
+      allow write: if false;
+    }
+    match /enterpriseSessions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.sessions.view");
+      allow write: if false;
+    }
+    match /enterpriseProvisioning/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.provisioning.manage");
+      allow write: if false;
+    }
+    match /enterpriseProvisioningHistory/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+    match /offices/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("offices.view");
+      allow write: if false;
+    }
+    match /officeMemberships/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("offices.view");
+      allow write: if false;
+    }
+    match /apiServiceAccounts/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("api.view");
+      allow write: if false;
+    }
+    match /apiCredentials/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("api.credentials.rotate");
+      allow write: if false;
+    }
+    match /apiUsage/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("api.view");
+      allow write: if false;
+    }
+    match /apiRateLimits/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("api.view");
+      allow write: if false;
+    }
+    match /apiAuditEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+    match /webhookSubscriptions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("webhooks.view");
+      allow write: if false;
+    }
+    match /webhookDeliveries/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("webhooks.view");
+      allow write: if false;
+    }
+    match /securityPolicies/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("security.centre.view");
+      allow write: if false;
+    }
+    match /securityAlerts/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("security.centre.view");
+      allow write: if false;
+    }
+    match /backupPolicies/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("backups.view");
+      allow write: if false;
+    }
+    match /backupExecutions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("backups.view");
+      allow write: if false;
+    }
+    match /restoreExecutions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("backups.restore");
+      allow write: if false;
+    }
+    match /disasterRecoveryTests/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("disaster_recovery.view");
+      allow write: if false;
+    }
+    match /featureFlags/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("feature_flags.manage");
+      allow write: if false;
+    }
+    match /featureFlagHistory/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+    match /maintenanceWindows/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("maintenance_mode.manage");
+      allow write: if false;
+    }
+    match /enterpriseAuditEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("enterprise.audit.view");
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

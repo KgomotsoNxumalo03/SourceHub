@@ -91,6 +91,12 @@ service firebase.storage {
         && request.resource.contentType.matches("image/.*|application/pdf|text/plain|application/vnd.openxmlformats-officedocument.*");
     }
 
+    // Enterprise backup and export objects are managed by Admin SDK/Functions only.
+    match /workspaces/{workspaceId}/enterprise/{allPaths=**} {
+      allow read: if workspaceMatches(workspaceId) && hasPermission("backups.view");
+      allow write: if false;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -304,3 +304,23 @@ npm run export
 ```
 
 Copy `apps/mobile/.env.example` to a local `.env`. Never place Firebase Admin credentials, provider keys, signing keys, or service-account files in the mobile workspace. Device push credentials, App Check native providers, and Android/iOS signing belong in the development-build or EAS environment. Emulator rule tests and native builds require the Firebase CLI, Java, and platform toolchains installed on the developer machine.
+
+## Phase 16: Enterprise Identity, API, Security and Continuity
+
+Phase 16 adds the enterprise readiness layer under `/administration/enterprise` and `/security`. It includes provider configuration records for Google Workspace, Microsoft Entra ID, SAML and OIDC readiness, verified identity linking, safe-role provisioning gates, enterprise session inventory and revocation, MFA policy records, multi-office records, scoped API service identities and one-time API credentials, versioned OpenAPI documentation at `/api/v1/openapi`, bounded ticket and resource API routes, signed webhook subscriptions and delivery retries, security alerts, feature flags, controlled maintenance mode, immutable enterprise audit events, and backup/disaster-recovery readiness records.
+
+All authoritative enterprise writes use the server/Admin SDK boundary. API credentials and webhook secrets are hashed or stored as approved secret references; the raw secret is returned only once at creation. API requests require `X-SourceHub-Api-Key` or a `Bearer shk_...` credential, an explicit scope, workspace scope, bounded pagination, and the configured rate limit. Webhook delivery rejects unsafe/private destinations, requires HTTPS outside local development, uses HMAC signatures over timestamp, event ID, and payload, and stops after five attempts. The Firebase client cannot write enterprise records directly.
+
+The default development posture is intentionally conservative: `ENTERPRISE_FIREBASE_IDP_ENABLED=false`, `ENTERPRISE_ALLOW_AUTO_PROVISIONING=false`, `ENTERPRISE_MFA_ENFORCEMENT_MODE=DISABLED`, and `ENTERPRISE_BACKUP_STATUS=NOT_CONFIGURED`. Do not switch these values on until the corresponding cloud controls are approved and tested. Password sign-in remains the existing SourceHub credential flow; Firebase Google/Entra sign-in requires Identity Platform provider setup and the redirect configuration in the Firebase console. SAML/OIDC and provider MFA are represented as readiness/configuration records, not falsely claimed as fully deployed authentication.
+
+Before production enablement, complete these external controls: configure Firebase Identity Platform Google and Microsoft providers, register Entra tenant and redirect URIs, configure approved domains and group-to-role mappings, provision MFA through Firebase/IdP policy, put `ENTERPRISE_API_KEY_PEPPER`, webhook secret references, and provider secrets in Secret Manager, enable App Check enforcement, configure Firestore scheduled exports and Storage lifecycle/retention, test a restore in an isolated project, set a documented RTO/RPO, deploy Functions in the approved region, and monitor delivery/alert logs. Multi-region availability remains a deployment architecture decision; this repository does not claim automatic failover or a completed restore merely because a policy record exists.
+
+Phase 16 seed data creates disabled identity providers, disabled MFA policy, Johannesburg/Cape Town/Durban/Remote offices, a backup readiness policy, a security baseline, a feature flag, and an audit entry. It contains no live credentials. Run only against the Emulator Suite or an approved development project:
+
+```powershell
+npm.cmd run seed:superusers
+npm.cmd run seed
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage,functions --project <firebase-project-id>
+```
+
+Validation includes `tests/enterprise.test.ts`, repository lint/typecheck/tests, Functions compilation, JSON validation, and the Next production build. Firebase Emulator rule tests and real backup/restore drills require the Firebase CLI, Java runtime, an approved Firebase project, and the relevant cloud credentials; they are not fabricated by local tests.

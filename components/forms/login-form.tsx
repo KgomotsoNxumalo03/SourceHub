@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { loginAction, type LoginState } from "@/lib/actions/auth";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@/components/ui";
+import { EnterpriseSsoButtons } from "@/components/forms/enterprise-sso";
 
 const initialState: LoginState = {};
 
@@ -58,6 +59,7 @@ export function LoginForm() {
             Sign in
           </Button>
         </form>
+        <EnterpriseSsoButtons />
         <div className="text-center text-xs text-slate-500">
           Development access only. Contact your Source IT Services administrator for a production account.
         </div>

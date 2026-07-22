@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/db";
+import { collectionNames } from "@/lib/collections";
+import { firestoreAdmin } from "@/lib/db";
 import { getSessionToken, hashToken } from "@/lib/session";
 import { hasPermission, hasRole, type CurrentUser } from "@/lib/permissions";
 import { cache } from "react";
 
 async function getSessionRecordByHash(tokenHash: string) {
+  const enterpriseSession = await firestoreAdmin.collection(collectionNames.enterpriseSessions).where("tokenHash", "==", tokenHash).limit(1).get();
+  if (!enterpriseSession.empty && enterpriseSession.docs[0].data()?.status !== "ACTIVE") return null;
   const session = await prisma.session.findUnique({
     where: { tokenHash },
     include: {

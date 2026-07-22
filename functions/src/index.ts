@@ -7,6 +7,7 @@ import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createHash, createHmac, randomUUID } from "node:crypto";
 
 const serviceAccountPath = process.env.SOURCEHUB_FIREBASE_SERVICE_ACCOUNT_PATH ?? join(process.cwd(), "firebase-service-account.json");
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
@@ -613,4 +614,141 @@ export const runScheduledMobileRetention = onSchedule("every day 04:15", async (
   operations.docs.forEach((document) => batch.delete(document.ref));
   await batch.commit();
   logger.info("Mobile retention sweep", { sessions: sessions.size, locations: locations.size, operations: operations.size });
+});
+
+function enterpriseSecretHash(secret: string) {
+  const pepper = process.env.ENTERPRISE_API_KEY_PEPPER ?? "development-enterprise-pepper-change-me";
+  return createHmac("sha256", pepper).update(secret).digest("hex");
+}
+
+function webhookIsSafe(endpointUrl: string) {
+  try {
+    const url = new URL(endpointUrl);
+    if (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && url.hostname === "localhost")) return false;
+    if (["127.0.0.1", "0.0.0.0", "::1"].includes(url.hostname) || url.hostname.endsWith(".local") || url.hostname.endsWith(".internal") || url.hostname.endsWith(".invalid")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveWebhookSecret(subscription: Record<string, unknown>) {
+  const secret = process.env.ENTERPRISE_WEBHOOK_DEV_SECRET;
+  const configuredRef = process.env.ENTERPRISE_WEBHOOK_SECRET_REF;
+  if (!secret) return null;
+  if (subscription.secretRef && configuredRef && subscription.secretRef === configuredRef) return secret;
+  if (process.env.NODE_ENV !== "production" && subscription.secretHash === enterpriseSecretHash(secret)) return secret;
+  return null;
+}
+
+export const queueEnterpriseTicketWebhooks = onDocumentWritten("tickets/{ticketId}", async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!after?.workspaceId || !after.subject) return;
+  const eventType = before ? "ticket.updated" : "ticket.created";
+  const subscriptions = await db.collection("webhookSubscriptions").where("workspaceId", "==", after.workspaceId).where("active", "==", true).where("eventTypes", "array-contains", eventType).limit(50).get();
+  for (const subscriptionDocument of subscriptions.docs) {
+    const subscription = subscriptionDocument.data();
+    const deliveryId = `${subscriptionDocument.id}:${event.params.ticketId}:${eventType}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 500);
+    await db.collection("webhookDeliveries").doc(deliveryId).set({
+      id: deliveryId,
+      workspaceId: after.workspaceId,
+      subscriptionId: subscriptionDocument.id,
+      eventId: randomUUID(),
+      eventType,
+      payloadVersion: subscription.payloadVersion ?? "2026-07-01",
+      payload: { id: event.params.ticketId, referenceNumber: after.referenceNumber ?? null, subject: String(after.subject).slice(0, 240), status: after.status ?? null, priority: after.priority ?? null, clientId: after.clientId ?? null },
+      status: "QUEUED",
+      attempts: 0,
+      nextAttemptAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+});
+
+export const runScheduledEnterpriseWebhookDelivery = onSchedule("every 1 minutes", async () => {
+  const now = new Date();
+  const deliveries = await db.collection("webhookDeliveries").where("status", "in", ["QUEUED", "RETRY"]).where("nextAttemptAt", "<=", now).limit(50).get();
+  let delivered = 0;
+  for (const deliveryDocument of deliveries.docs) {
+    const claimed: Record<string, any> | null = await db.runTransaction(async (transaction): Promise<Record<string, any> | null> => {
+      const current = await transaction.get(deliveryDocument.ref);
+      if (!current.exists || !["QUEUED", "RETRY"].includes(String(current.data()?.status))) return null;
+      const attempts = Number(current.data()?.attempts ?? 0) + 1;
+      transaction.update(deliveryDocument.ref, { status: "DELIVERING", attempts, updatedAt: FieldValue.serverTimestamp() });
+      return { ...current.data(), attempts };
+    });
+    if (!claimed) continue;
+    const subscriptionDocument = await db.collection("webhookSubscriptions").doc(String(claimed.subscriptionId)).get();
+    const subscription = subscriptionDocument.data();
+    const secret = subscription ? resolveWebhookSecret(subscription) : null;
+    const endpointUrl = String(subscription?.endpointUrl ?? "");
+    if (!subscriptionDocument.exists || subscription?.active !== true || !secret || !webhookIsSafe(endpointUrl)) {
+      await deliveryDocument.ref.update({ status: "BLOCKED", error: "Webhook secret, subscription, or endpoint safety configuration is incomplete.", updatedAt: FieldValue.serverTimestamp() });
+      continue;
+    }
+    const eventId = String(claimed.eventId);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const payload = JSON.stringify({ id: eventId, type: claimed.eventType, version: claimed.payloadVersion, data: claimed.payload });
+    const signature = `sha256=${createHmac("sha256", secret).update(`${timestamp}.${eventId}.${payload}`).digest("hex")}`;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), Number(process.env.ENTERPRISE_WEBHOOK_TIMEOUT_MS ?? 10000));
+      const response = await fetch(endpointUrl, { method: "POST", headers: { "Content-Type": "application/json", "User-Agent": "SourceHub-Webhook/1.0", "X-SourceHub-Event": String(claimed.eventType), "X-SourceHub-Event-Id": eventId, "X-SourceHub-Timestamp": timestamp, "X-SourceHub-Signature": signature }, body: payload, signal: controller.signal });
+      clearTimeout(timeout);
+      if (!response.ok) throw new Error(`Webhook returned HTTP ${response.status}.`);
+      await deliveryDocument.ref.update({ status: "DELIVERED", deliveredAt: FieldValue.serverTimestamp(), responseStatus: response.status, updatedAt: FieldValue.serverTimestamp() });
+      delivered += 1;
+    } catch (error) {
+      const attempts = Number(claimed.attempts ?? 1);
+      const terminal = attempts >= 5;
+      await deliveryDocument.ref.update({ status: terminal ? "FAILED" : "RETRY", error: error instanceof Error ? error.message.slice(0, 500) : "Webhook delivery failed.", nextAttemptAt: new Date(Date.now() + Math.min(60 * 60_000, 2 ** attempts * 30_000)), updatedAt: FieldValue.serverTimestamp() });
+      if (terminal) await db.collection("securityAlerts").doc(`webhook:${deliveryDocument.id}`).set({ id: `webhook:${deliveryDocument.id}`, workspaceId: claimed.workspaceId, type: "WEBHOOK_DELIVERY_FAILED", severity: "HIGH", status: "OPEN", description: "A configured enterprise webhook reached its retry limit.", relatedId: deliveryDocument.id, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
+  }
+  logger.info("Enterprise webhook delivery sweep", { queued: deliveries.size, delivered });
+});
+
+export const runScheduledEnterpriseRetention = onSchedule("every day 03:45", async () => {
+  const now = new Date();
+  const collections = ["enterpriseSessions", "apiRateLimits", "apiAuditEvents", "enterpriseAuditEvents"];
+  let deleted = 0;
+  for (const collection of collections) {
+    const snapshot = await db.collection(collection).where("expiresAt", "<", now).limit(400).get();
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    if (!snapshot.empty) await batch.commit();
+    deleted += snapshot.size;
+  }
+  logger.info("Enterprise retention sweep", { deleted });
+});
+
+export const runScheduledEnterpriseSecurityChecks = onSchedule("every 15 minutes", async () => {
+  const since = new Date(Date.now() - 15 * 60_000);
+  const rejected = await db.collection("apiAuditEvents").where("result", "==", "REJECTED").limit(200).get();
+  let alerts = 0;
+  for (const document of rejected.docs) {
+    const event = document.data();
+    const createdAt = asDate(event.createdAt);
+    if (!createdAt || createdAt < since || !event.workspaceId) continue;
+    const alertId = `api-rejected:${event.workspaceId}:${event.credentialId ?? "unknown"}:${createdAt.toISOString().slice(0, 13)}`;
+    await db.collection("securityAlerts").doc(alertId).set({ id: alertId, workspaceId: event.workspaceId, type: "API_AUTHENTICATION_FAILURE", severity: "MEDIUM", status: "OPEN", description: "An enterprise API request was rejected and requires review.", relatedId: document.id, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    alerts += 1;
+  }
+  logger.info("Enterprise security check", { rejectedEvents: rejected.size, alerts });
+});
+
+export const runScheduledEnterpriseContinuityChecks = onSchedule("every day 05:00", async () => {
+  const workspaces = await db.collection("workspaces").limit(100).get();
+  let notReady = 0;
+  for (const workspaceDocument of workspaces.docs) {
+    const workspaceId = workspaceDocument.id;
+    const policy = await db.collection("backupPolicies").doc(`${workspaceId}:default`).get();
+    if (policy.data()?.status === "CONFIGURED") continue;
+    notReady += 1;
+    const alertId = `continuity:${workspaceId}`;
+    await db.collection("securityAlerts").doc(alertId).set({ id: alertId, workspaceId, type: "BACKUP_NOT_CONFIGURED", severity: "HIGH", status: "OPEN", description: "Managed backup and restore verification is not configured for this workspace.", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  logger.info("Enterprise continuity check", { workspaces: workspaces.size, notReady });
 });
