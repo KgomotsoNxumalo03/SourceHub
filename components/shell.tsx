@@ -23,6 +23,7 @@ import { navigationItems } from "@/lib/navigation";
 import { type CurrentUser } from "@/lib/permissions";
 import { Avatar, Badge, Button, Card, CardContent, Breadcrumbs, Input, buttonClassName } from "@/components/ui";
 import { DropdownMenu } from "@/components/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn, formatDateTime, initialsFromName } from "@/lib/utils";
 
 type ShellNotification = {
@@ -338,6 +339,7 @@ export function AppShell({
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <ThemeToggle />
                 {user.permissions.includes("ai.use") ? <Link href="/ai" className="inline-flex h-10 items-center gap-2 rounded-xl border border-sourcehub-border bg-white px-3 text-sm font-medium text-sourcehub-primary hover:border-sourcehub-primary"><Sparkles className="h-4 w-4" /> <span className="hidden md:inline">Ask AI</span></Link> : null}
                 <DropdownMenu
                   align="right"

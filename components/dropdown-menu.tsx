@@ -25,7 +25,7 @@ export function DropdownMenu({
       {open ? (
         <div
           className={cn(
-            "absolute z-20 mt-2 w-56 rounded-2xl border border-sourcehub-border bg-white p-2 shadow-soft",
+            "absolute z-20 mt-2 w-56 rounded-2xl border border-sourcehub-border bg-white p-2 shadow-soft dark:bg-sourcehub-surface",
             align === "right" ? "right-0" : "left-0",
           )}
         >

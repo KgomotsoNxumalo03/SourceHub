@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ThemeToggle } from "@/components/theme-toggle";
+
 export default function AuthLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
@@ -38,7 +40,10 @@ export default function AuthLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </div>
       </div>
-      <main className="flex items-center justify-center px-4 py-10 sm:px-8 lg:px-12">
+      <main className="relative flex items-center justify-center px-4 py-10 sm:px-8 lg:px-12">
+        <div className="absolute right-4 top-4 sm:right-8">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">{children}</div>
       </main>
     </div>

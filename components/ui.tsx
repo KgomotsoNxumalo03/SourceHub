@@ -13,11 +13,11 @@ const buttonVariants: Record<ButtonVariant, string> = {
   secondary:
     "bg-sourcehub-secondary text-white hover:bg-[#0b2d57] focus-visible:ring-sourcehub-accent",
   ghost:
-    "bg-transparent text-sourcehub-text hover:bg-white/60 hover:text-sourcehub-primary focus-visible:ring-sourcehub-accent",
+    "bg-transparent text-sourcehub-text hover:bg-white/60 hover:text-sourcehub-primary focus-visible:ring-sourcehub-accent dark:hover:bg-white/10",
   danger:
     "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-400",
   outline:
-    "border border-sourcehub-border bg-white text-sourcehub-text hover:border-sourcehub-primary hover:text-sourcehub-primary focus-visible:ring-sourcehub-accent",
+    "border border-sourcehub-border bg-white text-sourcehub-text hover:border-sourcehub-primary hover:text-sourcehub-primary focus-visible:ring-sourcehub-accent dark:bg-sourcehub-surface",
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
@@ -73,7 +73,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        "h-11 w-full rounded-xl border border-sourcehub-border bg-white px-4 text-sm text-sourcehub-text outline-none transition placeholder:text-slate-400 focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted",
+        "h-11 w-full rounded-xl border border-sourcehub-border bg-white px-4 text-sm text-sourcehub-text outline-none transition placeholder:text-slate-400 focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted dark:bg-sourcehub-surface",
         className,
       )}
       {...props}
@@ -85,7 +85,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       className={cn(
-        "min-h-28 w-full rounded-xl border border-sourcehub-border bg-white px-4 py-3 text-sm text-sourcehub-text outline-none transition placeholder:text-slate-400 focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted",
+        "min-h-28 w-full rounded-xl border border-sourcehub-border bg-white px-4 py-3 text-sm text-sourcehub-text outline-none transition placeholder:text-slate-400 focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted dark:bg-sourcehub-surface",
         className,
       )}
       {...props}
@@ -97,7 +97,7 @@ export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectE
   return (
     <select
       className={cn(
-        "h-11 w-full rounded-xl border border-sourcehub-border bg-white px-4 text-sm text-sourcehub-text outline-none transition focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted",
+        "h-11 w-full rounded-xl border border-sourcehub-border bg-white px-4 text-sm text-sourcehub-text outline-none transition focus:border-sourcehub-primary focus:ring-2 focus:ring-sourcehub-accent/30 disabled:cursor-not-allowed disabled:bg-sourcehub-muted dark:bg-sourcehub-surface",
         className,
       )}
       {...props}
@@ -125,7 +125,7 @@ const badgeVariants = {
   danger: "bg-rose-100 text-rose-700",
   info: "bg-sky-100 text-sky-800",
   navy: "bg-navy-900 text-white",
-  outline: "border border-sourcehub-border bg-white text-sourcehub-text",
+  outline: "border border-sourcehub-border bg-white text-sourcehub-text dark:bg-sourcehub-surface",
 } as const;
 
 export function Badge({
@@ -181,7 +181,7 @@ export function CardDescription({ className, ...props }: HTMLAttributes<HTMLPara
 
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-sourcehub-border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-sourcehub-border bg-white dark:bg-sourcehub-surface">
       <table className={cn("min-w-full divide-y divide-sourcehub-border text-sm", className)} {...props} />
     </div>
   );
@@ -192,7 +192,7 @@ export function TableHead({ className, ...props }: HTMLAttributes<HTMLTableSecti
 }
 
 export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-sourcehub-border bg-white", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-sourcehub-border bg-white dark:bg-sourcehub-surface", className)} {...props} />;
 }
 
 export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {

@@ -3,6 +3,7 @@ import { updateSettingsAction } from "@/lib/actions/settings";
 import { requirePermission } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { hasPermission } from "@/lib/permissions";
+import { ThemeSettings } from "@/components/theme-settings";
 
 export default async function SettingsPage({
   searchParams,
@@ -22,6 +23,16 @@ export default async function SettingsPage({
         title="SourceHub settings"
         description="Maintain company profile and branding data in the database."
       />
+
+      <Card className="overflow-hidden border-sourcehub-primary/20 bg-[linear-gradient(135deg,rgb(var(--sourcehub-primary)/0.10),rgb(var(--sourcehub-accent)/0.08))]">
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <p className="mt-1 text-sm text-slate-600">Choose the workspace theme. Your preference is saved on this device.</p>
+        </CardHeader>
+        <CardContent>
+          <ThemeSettings />
+        </CardContent>
+      </Card>
 
       {params.updated ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">

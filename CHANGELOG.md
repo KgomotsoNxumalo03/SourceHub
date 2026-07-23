@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Dark Mode
+
+- Added persistent Light, Dark, and System appearance preferences with pre-hydration theme application.
+- Added accessible theme toggles in the authenticated shell and login surface, plus a vibrant Appearance panel in Settings.
+- Added dark palette coverage for shared cards, forms, tables, alerts, navigation, and legacy utility-heavy pages.
+
 ### Stability Repair
 
 - Separated the interactive dropdown from shared UI primitives so server-rendered pages can safely generate button class names without a client-boundary runtime error.

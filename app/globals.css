@@ -17,6 +17,10 @@
   --sourcehub-sky-500: 11 188 235;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -33,6 +37,7 @@ body {
     radial-gradient(circle at top right, rgba(15, 70, 176, 0.12), transparent 28%),
     linear-gradient(180deg, rgb(var(--sourcehub-bg)) 0%, rgb(242 246 250) 100%);
   color: rgb(var(--sourcehub-text));
+  transition: background-color 220ms ease, color 220ms ease;
 }
 
 a {
@@ -43,6 +48,50 @@ a {
 ::selection {
   background: rgba(11, 188, 235, 0.24);
 }
+
+/* Keep legacy utility-heavy pages in the same visual system as the tokenized UI. */
+.dark {
+  --sourcehub-bg: 7 16 31;
+  --sourcehub-surface: 15 29 50;
+  --sourcehub-muted: 21 40 67;
+  --sourcehub-border: 49 73 105;
+  --sourcehub-text: 235 244 255;
+  --sourcehub-primary: 74 151 255;
+  --sourcehub-secondary: 30 74 135;
+  --sourcehub-accent: 22 214 196;
+  --sourcehub-navy-950: 3 10 24;
+  --sourcehub-navy-900: 9 28 57;
+  --sourcehub-navy-800: 28 90 176;
+  --sourcehub-sky-500: 22 214 196;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at 10% -5%, rgba(22, 214, 196, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 4%, rgba(74, 151, 255, 0.20), transparent 30%),
+    linear-gradient(180deg, rgb(7 16 31) 0%, rgb(10 23 42) 100%);
+}
+
+.dark .bg-white { background-color: rgb(var(--sourcehub-surface)) !important; }
+.dark .bg-white\/95 { background-color: rgb(var(--sourcehub-surface) / 0.96) !important; }
+.dark .bg-white\/90 { background-color: rgb(var(--sourcehub-surface) / 0.92) !important; }
+.dark .bg-white\/80 { background-color: rgb(var(--sourcehub-surface) / 0.84) !important; }
+.dark .bg-white\/60 { background-color: rgb(255 255 255 / 0.08) !important; }
+.dark .text-slate-900, .dark .text-slate-800 { color: rgb(235 244 255) !important; }
+.dark .text-slate-700 { color: rgb(211 225 242) !important; }
+.dark .text-slate-600 { color: rgb(166 184 210) !important; }
+.dark .text-slate-500 { color: rgb(132 155 186) !important; }
+.dark .text-slate-400 { color: rgb(105 132 168) !important; }
+.dark .border-slate-200, .dark .border-slate-300 { border-color: rgb(var(--sourcehub-border)) !important; }
+.dark .bg-slate-50, .dark .bg-slate-100 { background-color: rgb(var(--sourcehub-muted) / 0.55) !important; }
+.dark .bg-emerald-50 { background-color: rgb(6 78 59 / 0.38) !important; }
+.dark .bg-rose-50 { background-color: rgb(127 29 29 / 0.38) !important; }
+.dark .bg-amber-50 { background-color: rgb(120 53 15 / 0.38) !important; }
+.dark .bg-sky-50, .dark .bg-blue-50 { background-color: rgb(7 89 133 / 0.38) !important; }
+.dark .text-emerald-700, .dark .text-emerald-800 { color: rgb(110 231 183) !important; }
+.dark .text-rose-700, .dark .text-rose-800 { color: rgb(253 164 175) !important; }
+.dark .text-amber-700, .dark .text-amber-800 { color: rgb(252 211 77) !important; }
+.dark .border-emerald-200, .dark .border-rose-200, .dark .border-amber-200, .dark .border-sky-200 { border-color: rgb(var(--sourcehub-border)) !important; }
 
 @layer utilities {
   .text-balance {
