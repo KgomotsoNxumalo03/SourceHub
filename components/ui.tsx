@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { useState, type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes, type TdHTMLAttributes } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-react";
 
@@ -205,7 +205,7 @@ export function TableHeadCell({ className, ...props }: HTMLAttributes<HTMLTableC
   return <th className={cn("px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600", className)} {...props} />;
 }
 
-export function TableCell({ className, ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn("px-4 py-3 align-top text-sourcehub-text", className)} {...props} />;
 }
 

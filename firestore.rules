@@ -1259,6 +1259,54 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Phase 19 operational records are server-authoritative. Browser reads are
+    // scoped to the workspace; health, incidents, defects, and releases never
+    // accept direct client writes.
+    match /operationalHealthChecks/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalIncidents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalDefects/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalFeedback/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (hasPermission("operations.view") || resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+    match /operationalFeedbackVotes/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalAnalyticsEvents/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.analytics.view");
+      allow write: if false;
+    }
+    match /operationalReleases/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalSliSnapshots/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalCommunications/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalPostmortems/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+    match /operationalRetentionRuns/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

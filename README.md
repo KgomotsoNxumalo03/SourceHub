@@ -369,3 +369,14 @@ npm.cmd run build
 ```
 
 Firebase Emulator rules, a real backup restore, UAT approval, production provider configuration, and production deployment authorization remain external release gates. This repository does not claim those activities were completed locally.
+
+## Phase 19: Post-Launch Operations Foundation
+
+Phase 19 adds the internal operations dashboard at `/administration/operations` and authenticated product feedback at `/feedback`. It records workspace-scoped health checks, incidents, defects, releases, and privacy-safe allowlisted analytics through the server/Admin SDK boundary. Operational Firestore records are server-write-only from client applications and analytics retention is bounded by a scheduled Function.
+
+Read the operating model and communication templates in:
+
+- `docs/PHASE-19-OPERATIONS.md`
+- `docs/INCIDENT-TEMPLATES.md`
+
+This phase is an internal-pilot foundation, not a production launch claim. External paging, UAT, Firebase Emulator validation, backup/restore evidence, provider setup, App Check enforcement, and deployment approval remain pending.

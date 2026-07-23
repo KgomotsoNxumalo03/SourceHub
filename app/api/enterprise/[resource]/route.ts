@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { collectionNames } from "@/lib/collections";
 import { currentUser } from "@/lib/auth";
-import { firestoreAdmin, prisma } from "@/lib/db";
+import { firestoreAdmin } from "@/lib/db";
 import { env } from "@/lib/env";
 import { assertSafeWebhookUrl, createOneTimeSecret, createServiceAccount, featureFlagSchema, getEnterpriseSecuritySummary, getMaintenanceState, identityProviderSchema, maintenanceWindowSchema, officeSchema, recordEnterpriseAudit, serviceAccountSchema, validateIdentityProvider, webhookSubscriptionSchema } from "@/lib/enterprise";
 import { hasPermission } from "@/lib/permissions";
@@ -67,7 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ res
       const actor = await actorFor("maintenance_mode.manage"); const value = maintenanceWindowSchema.parse({ ...body, workspaceId: env.DEFAULT_WORKSPACE_ID }); const id = randomUUID(); await firestoreAdmin.collection(collectionNames.maintenanceWindows).doc(id).set({ id, ...value, workspaceId: env.DEFAULT_WORKSPACE_ID, status: "ACTIVE", createdBy: actor.id, updatedBy: actor.id, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); await recordEnterpriseAudit({ actorId: actor.id, workspaceId: env.DEFAULT_WORKSPACE_ID, action: "maintenance.activated", targetType: "MaintenanceWindow", targetId: id, metadata: { affectedModules: value.affectedModules, emergency: value.emergency } }); return Response.json({ id });
     }
     if (resource === "sessions" && body.action === "revoke") {
-      const actor = await actorFor("enterprise.sessions.revoke"); const id = String(body.sessionId ?? ""); if (!id) throw new Error("A session ID is required."); const session = await firestoreAdmin.collection(collectionNames.enterpriseSessions).doc(id).get(); if (!session.exists || session.data()?.workspaceId !== env.DEFAULT_WORKSPACE_ID) throw new Error("Session not found."); await session.ref.update({ status: "REVOKED", revokedBy: actor.id, revokedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); await prisma.session.deleteMany({ where: { id } }); await recordEnterpriseAudit({ actorId: actor.id, workspaceId: env.DEFAULT_WORKSPACE_ID, action: "session.revoked", targetType: "EnterpriseSession", targetId: id }); return Response.json({ ok: true });
+      const actor = await actorFor("enterprise.sessions.revoke"); const id = String(body.sessionId ?? ""); if (!id) throw new Error("A session ID is required."); const session = await firestoreAdmin.collection(collectionNames.enterpriseSessions).doc(id).get(); if (!session.exists || session.data()?.workspaceId !== env.DEFAULT_WORKSPACE_ID) throw new Error("Session not found."); await session.ref.update({ status: "REVOKED", revokedBy: actor.id, revokedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); await firestoreAdmin.collection(collectionNames.sessions).doc(id).delete(); await recordEnterpriseAudit({ actorId: actor.id, workspaceId: env.DEFAULT_WORKSPACE_ID, action: "session.revoked", targetType: "EnterpriseSession", targetId: id }); return Response.json({ ok: true });
     }
     return errorResponse(new Error("Unknown enterprise resource."), 404);
   } catch (error) { return errorResponse(error, error instanceof Error && error.message.includes("permission") ? 403 : 400); }

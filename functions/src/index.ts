@@ -872,3 +872,14 @@ export const runScheduledCommercialOperations = onSchedule("every 30 minutes", a
   await db.collection("commercialOperationalMetrics").doc(periodKey).set({ id: periodKey, periodKey, tenantCount: tenants.size, lifecycleCounts: counts, createdAt: FieldValue.serverTimestamp() }, { merge: true });
   logger.info("Commercial operations snapshot", { tenants: tenants.size, lifecycleCounts: counts });
 });
+
+export const runScheduledOperationalRetention = onSchedule("every day 02:45", async () => {
+  const retentionDays = Math.max(30, Number(process.env.OPERATIONS_ANALYTICS_RETENTION_DAYS ?? 180));
+  const cutoff = new Date(Date.now() - retentionDays * 86_400_000);
+  const snapshot = await db.collection("operationalAnalyticsEvents").where("createdAt", "<=", cutoff).limit(400).get();
+  const batch = db.batch();
+  snapshot.docs.forEach((document) => batch.delete(document.ref));
+  if (!snapshot.empty) await batch.commit();
+  await db.collection("operationalRetentionRuns").add({ id: randomUUID(), workspaceId: process.env.DEFAULT_WORKSPACE_ID ?? "source-it-services", retentionDays, deleted: snapshot.size, status: "SUCCESS", completedAt: FieldValue.serverTimestamp() });
+  logger.info("Operational analytics retention sweep", { deleted: snapshot.size, retentionDays });
+});

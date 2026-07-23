@@ -294,6 +294,17 @@ export const collectionNames = {
   commercialOperationalMetrics: "commercialOperationalMetrics",
   commercialChangelog: "commercialChangelog",
   commercialMigrationJobs: "commercialMigrationJobs",
+  operationalHealthChecks: "operationalHealthChecks",
+  operationalIncidents: "operationalIncidents",
+  operationalDefects: "operationalDefects",
+  operationalFeedback: "operationalFeedback",
+  operationalFeedbackVotes: "operationalFeedbackVotes",
+  operationalAnalyticsEvents: "operationalAnalyticsEvents",
+  operationalReleases: "operationalReleases",
+  operationalSliSnapshots: "operationalSliSnapshots",
+  operationalCommunications: "operationalCommunications",
+  operationalPostmortems: "operationalPostmortems",
+  operationalRetentionRuns: "operationalRetentionRuns",
 } as const;
 
 export type CollectionName = (typeof collectionNames)[keyof typeof collectionNames];
