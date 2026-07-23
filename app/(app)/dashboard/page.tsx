@@ -16,6 +16,9 @@ import { requirePermission } from "@/lib/auth";
 import { getDashboardSummary } from "@/lib/dashboard";
 import { hasPermission } from "@/lib/permissions";
 import { formatDate, formatDateTime, initialsFromName } from "@/lib/utils";
+import { getTourProgress } from "@/lib/pilot";
+import { ProductTour } from "@/components/pilot/product-tour";
+import { ContextualFeedbackButton } from "@/components/pilot/contextual-feedback-button";
 
 function formatActionLabel(action: string) {
   return action
@@ -28,7 +31,7 @@ function formatActionLabel(action: string) {
 export default async function DashboardPage() {
   const user = await requirePermission("dashboard.view");
 
-  const summary = await getDashboardSummary(user);
+  const [summary, tourProgress] = await Promise.all([getDashboardSummary(user), getTourProgress(user)]);
 
   const currentDate = formatDate(new Date());
 
@@ -99,11 +102,11 @@ export default async function DashboardPage() {
         title={`Welcome back, ${user.firstName}`}
         description={`Today is ${currentDate}. SourceHub is focused on the Phase 1 foundation while the roadmap stays clearly staged.`}
         actions={
-          <Badge tone="info" className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide">
-            Active session
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2"><ContextualFeedbackButton module="Dashboard" route="/dashboard" /><Badge tone="info" className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide">Active session</Badge></div>
         }
       />
+
+      <ProductTour permissions={user.permissions} initialStep={Number((tourProgress as Record<string, any>).step ?? 0)} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {platformCards.map((card) => (

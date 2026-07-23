@@ -1306,6 +1306,46 @@ service cloud.firestore {
       allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("operations.view");
       allow write: if false;
     }
+    match /pilotPrograms/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotChecklistItems/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotUatCases/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotCheckpoints/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotRisks/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotDecisions/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotTraining/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
+    match /pilotTourProgress/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (hasPermission("pilots.view") || resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+    match /pilotOnboardingProgress/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && (hasPermission("pilots.view") || resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+    match /pilotScenarios/{id} {
+      allow read: if workspaceMatches(resource.data.workspaceId) && hasPermission("pilots.view");
+      allow write: if false;
+    }
 
     match /{document=**} {
       allow read, write: if false;

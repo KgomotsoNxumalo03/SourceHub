@@ -10,7 +10,7 @@ const list = (formData: FormData, key: string) => text(formData, key).split(",")
 
 export async function submitFeedbackAction(formData: FormData) {
   const actor = await requireAuth();
-  await submitFeedback({ category: text(formData, "category"), module: text(formData, "module"), description: text(formData, "description"), impact: text(formData, "impact"), frequency: text(formData, "frequency"), visibility: text(formData, "visibility") || "PRIVATE" }, actor);
+  await submitFeedback({ category: text(formData, "category"), feedbackType: text(formData, "feedbackType") || "GENERAL", pilotId: text(formData, "pilotId"), persona: text(formData, "persona"), module: text(formData, "module"), pageRoute: text(formData, "pageRoute"), description: text(formData, "description"), expectedBehaviour: text(formData, "expectedBehaviour"), actualBehaviour: text(formData, "actualBehaviour"), impact: text(formData, "impact"), frequency: text(formData, "frequency"), businessImpact: text(formData, "businessImpact") || "MEDIUM", browserCategory: text(formData, "browserCategory") || "OTHER", screenCategory: text(formData, "screenCategory") || "UNKNOWN", appVersion: text(formData, "appVersion"), visibility: text(formData, "visibility") || "PRIVATE" }, actor);
   redirect("/feedback?submitted=1");
 }
 

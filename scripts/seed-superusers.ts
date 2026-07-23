@@ -190,26 +190,6 @@ const accounts = [
     department: env.DEV_ADMIN_DEPARTMENT,
     roleName: "Super Administrator",
   },
-  {
-    email: "kg@sourcehub.local",
-    password: "SourceHubKG123!",
-    firstName: "KG",
-    lastName: "Administrator",
-    employeeNumber: "SH-0002",
-    jobTitle: "Platform Administrator",
-    department: "IT Operations",
-    roleName: "Super Administrator",
-  },
-  {
-    email: "gareth@sourcehub.local",
-    password: "SourceHubGareth123!",
-    firstName: "Gareth",
-    lastName: "Administrator",
-    employeeNumber: "SH-0003",
-    jobTitle: "Platform Administrator",
-    department: "IT Operations",
-    roleName: "Super Administrator",
-  },
 ];
 
 function permissionName(key: string) {
@@ -351,6 +331,9 @@ async function ensureUser(account: (typeof accounts)[number], roleId: string) {
 }
 
 async function main() {
+  if (env.DEV_ADMIN_PASSWORD.startsWith("replace-with-")) {
+    throw new Error("Set DEV_ADMIN_PASSWORD in the ignored local environment before seeding a development administrator.");
+  }
   await ensureWorkspace();
 
   const permissionIds = new Map<string, string>();

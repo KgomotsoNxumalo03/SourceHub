@@ -305,6 +305,16 @@ export const collectionNames = {
   operationalCommunications: "operationalCommunications",
   operationalPostmortems: "operationalPostmortems",
   operationalRetentionRuns: "operationalRetentionRuns",
+  pilotPrograms: "pilotPrograms",
+  pilotChecklistItems: "pilotChecklistItems",
+  pilotUatCases: "pilotUatCases",
+  pilotCheckpoints: "pilotCheckpoints",
+  pilotRisks: "pilotRisks",
+  pilotDecisions: "pilotDecisions",
+  pilotTraining: "pilotTraining",
+  pilotTourProgress: "pilotTourProgress",
+  pilotOnboardingProgress: "pilotOnboardingProgress",
+  pilotScenarios: "pilotScenarios",
 } as const;
 
 export type CollectionName = (typeof collectionNames)[keyof typeof collectionNames];

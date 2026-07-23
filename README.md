@@ -380,3 +380,16 @@ Read the operating model and communication templates in:
 - `docs/INCIDENT-TEMPLATES.md`
 
 This phase is an internal-pilot foundation, not a production launch claim. External paging, UAT, Firebase Emulator validation, backup/restore evidence, provider setup, App Check enforcement, and deployment approval remain pending.
+
+## Phase 20: Pilot Enablement
+
+Phase 20 provides protected pilot management at `/administration/pilots`, a reusable readiness checklist, human-recorded UAT scenarios and exports, role-based pilot onboarding at `/onboarding/pilot`, an optional product tour, contextual feedback, and guarded deterministic synthetic demo data.
+
+Read:
+
+- `docs/PHASE-20-PILOT-READINESS.md`
+- `docs/PHASE-20-SCENARIOS.md`
+- `docs/DEMO-PERSONAS.md`
+- `docs/PHASE-20-SUPPORT-AND-TRAINING.md`
+
+Run `npm.cmd run seed:pilot-demo -- --dry-run` only against the Firebase Emulator or an explicitly approved non-production environment. Phase 20 does not claim real users, UAT approval, production usage, external customer access, production deployment, commercial activation, or live billing.

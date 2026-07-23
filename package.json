@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
     "seed": "tsx --env-file=.env.local scripts/seed-superusers.ts && tsx --env-file=.env.local scripts/seed-firestore.mjs && tsx --env-file=.env.local scripts/sync-employees.ts",
-    "seed:superusers": "tsx --env-file=.env.local scripts/seed-superusers.ts"
+    "seed:superusers": "tsx --env-file=.env.local scripts/seed-superusers.ts",
+    "seed:pilot-demo": "tsx --env-file=.env.local scripts/seed-pilot-demo.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -39,6 +39,7 @@ export const navigationItems = [
   { label: "SourceHub AI", href: "/ai", icon: Sparkles, permission: "ai.use" },
   { label: "AI Administration", href: "/administration/ai", icon: ShieldAlert, permission: "ai.settings.manage" },
   { label: "Operations", href: "/administration/operations", icon: Activity, permission: "operations.view" },
+  { label: "Pilot Management", href: "/administration/pilots", icon: Activity, permission: "pilots.view" },
   { label: "Administration", href: "/administration/users", icon: ShieldAlert, permission: "users.view" },
   { label: "Settings", href: "/settings", icon: Settings2, permission: "settings.view" },
 ] as const;

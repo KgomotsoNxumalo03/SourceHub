@@ -4,16 +4,28 @@ export const operationalEventNames = [
   "login.success", "module.opened", "ticket.created", "ticket.resolved",
   "search.performed", "search.empty", "knowledge.viewed", "report.generated",
   "automation.executed", "mobile.workflow.completed", "onboarding.completed", "feature.adopted",
+  "onboarding.started", "tour.started", "tour.completed", "project.created", "task.completed",
+  "article.viewed", "feedback.submitted", "uat.test.completed", "error.encountered",
 ] as const;
 
 export type OperationalEventName = (typeof operationalEventNames)[number];
 
 export const feedbackSchema = z.object({
   category: z.enum(["BUG", "FEATURE", "USABILITY", "PERFORMANCE", "DOCUMENTATION", "GENERAL"]),
+  feedbackType: z.enum(["BUG", "USABILITY", "MISSING_CAPABILITY", "PERFORMANCE", "DOCUMENTATION", "TRAINING", "POSITIVE", "GENERAL"]).default("GENERAL"),
+  pilotId: z.string().trim().max(160).default(""),
+  persona: z.string().trim().max(100).default(""),
   module: z.string().trim().min(1).max(80),
+  pageRoute: z.string().trim().max(180).default(""),
   description: z.string().trim().min(20).max(5000),
+  expectedBehaviour: z.string().trim().max(2000).default(""),
+  actualBehaviour: z.string().trim().max(2000).default(""),
   impact: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
   frequency: z.enum(["ONCE", "OCCASIONAL", "FREQUENT", "ALWAYS"]),
+  businessImpact: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
+  browserCategory: z.enum(["CHROMIUM", "FIREFOX", "SAFARI", "EDGE", "OTHER"]).default("OTHER"),
+  screenCategory: z.enum(["MOBILE", "TABLET", "DESKTOP", "UNKNOWN"]).default("UNKNOWN"),
+  appVersion: z.string().trim().max(40).default(""),
   visibility: z.enum(["PRIVATE", "WORKSPACE"]).default("PRIVATE"),
 });
 
@@ -54,7 +66,7 @@ export function sanitizeOperationalText(value: unknown, max = 5000) {
 
 export function safeAnalyticsMetadata(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const allowed = new Set(["module", "screen", "source", "result", "status", "platform", "role", "durationMs"]);
+  const allowed = new Set(["module", "screen", "source", "result", "status", "platform", "role", "durationMs", "route", "synthetic"]);
   const result: Record<string, string | number | boolean> = {};
   for (const [key, child] of Object.entries(value)) {
     if (!allowed.has(key) || (typeof child !== "string" && typeof child !== "number" && typeof child !== "boolean")) continue;

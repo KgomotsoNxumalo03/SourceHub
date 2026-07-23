@@ -40,7 +40,7 @@ export async function getOperationalSummary() {
 export async function submitFeedback(input: unknown, actor: CurrentUser) {
   const value = feedbackSchema.parse(input);
   const id = randomUUID();
-  await firestoreAdmin.collection(collectionNames.operationalFeedback).doc(id).set({ id, workspaceId, tenantId: workspaceId, userId: actor.id, category: value.category, module: sanitizeOperationalText(value.module, 80), description: sanitizeOperationalText(value.description), impact: value.impact, frequency: value.frequency, visibility: value.visibility, status: "NEW", voteCount: 0, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  await firestoreAdmin.collection(collectionNames.operationalFeedback).doc(id).set({ id, workspaceId, tenantId: workspaceId, userId: actor.id, category: value.category, feedbackType: value.feedbackType, pilotId: value.pilotId || null, persona: sanitizeOperationalText(value.persona, 100), module: sanitizeOperationalText(value.module, 80), pageRoute: sanitizeOperationalText(value.pageRoute, 180), description: sanitizeOperationalText(value.description), expectedBehaviour: sanitizeOperationalText(value.expectedBehaviour, 2000), actualBehaviour: sanitizeOperationalText(value.actualBehaviour, 2000), impact: value.impact, frequency: value.frequency, businessImpact: value.businessImpact, browserCategory: value.browserCategory, screenCategory: value.screenCategory, appVersion: sanitizeOperationalText(value.appVersion, 40), visibility: value.visibility, status: "NEW", voteCount: 0, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
   await recordEnterpriseAudit({ actorId: actor.id, workspaceId, action: "operations.feedback.submitted", targetType: "OperationalFeedback", targetId: id, metadata: { category: value.category, module: value.module, impact: value.impact } });
   return id;
 }
@@ -48,7 +48,7 @@ export async function submitFeedback(input: unknown, actor: CurrentUser) {
 export async function recordProductEvent(eventName: OperationalEventName, actor: Pick<CurrentUser, "id"> | null, metadata?: unknown) {
   if (!env.OPERATIONS_ENABLED || !operationalEventNames.includes(eventName)) return null;
   const id = randomUUID();
-  await firestoreAdmin.collection(collectionNames.operationalAnalyticsEvents).doc(id).set({ id, workspaceId, eventName, userId: actor?.id ?? null, metadata: safeAnalyticsMetadata(metadata), createdAt: FieldValue.serverTimestamp(), expiresAt: new Date(Date.now() + env.OPERATIONS_ANALYTICS_RETENTION_DAYS * 86_400_000) });
+  await firestoreAdmin.collection(collectionNames.operationalAnalyticsEvents).doc(id).set({ id, workspaceId, tenantId: workspaceId, eventName, eventSchemaVersion: 1, synthetic: false, userId: actor?.id ?? null, metadata: safeAnalyticsMetadata(metadata), createdAt: FieldValue.serverTimestamp(), expiresAt: new Date(Date.now() + env.OPERATIONS_ANALYTICS_RETENTION_DAYS * 86_400_000) });
   return id;
 }
 
