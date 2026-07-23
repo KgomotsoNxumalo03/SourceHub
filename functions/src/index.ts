@@ -5,13 +5,14 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createHash, createHmac, randomUUID } from "node:crypto";
 
 const serviceAccountPath = process.env.SOURCEHUB_FIREBASE_SERVICE_ACCOUNT_PATH ?? join(process.cwd(), "firebase-service-account.json");
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
-const app = getApps()[0] ?? initializeApp({ credential: cert(serviceAccount), projectId: serviceAccount.project_id });
+const serviceAccount = existsSync(serviceAccountPath) ? JSON.parse(readFileSync(serviceAccountPath, "utf8")) : null;
+const projectId = serviceAccount?.project_id ?? process.env.GCLOUD_PROJECT ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "sourcehub-local";
+const app = getApps()[0] ?? initializeApp({ ...(serviceAccount ? { credential: cert(serviceAccount) } : {}), projectId });
 const db = getFirestore(app);
 
 export const runScheduledSlaChecks = onSchedule("every 5 minutes", async () => {

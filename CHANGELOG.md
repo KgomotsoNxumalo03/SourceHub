@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Repository Audit
+
+- Added missing composite indexes for pilot evidence and pilot-scoped operational feedback queries.
+- Made Firebase Admin initialization work with service-account files, Application Default Credentials, or emulator/project configuration instead of requiring an ignored local secret file.
+- Recorded repository-wide validation evidence and external/manual checks in `docs/REPOSITORY-AUDIT-REPAIR.md`.
+
 ### Phase 19
 
 - Added an authenticated operations dashboard for internal health, incidents, defects, feedback, and release tracking.

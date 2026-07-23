@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cert, getApps, initializeApp } from "firebase-admin/app";
@@ -10,13 +10,21 @@ const serviceAccountPath =
   process.env.SOURCEHUB_FIREBASE_SERVICE_ACCOUNT_PATH ??
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH ??
   join(process.cwd(), "firebase-service-account.json");
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
+const serviceAccount = existsSync(serviceAccountPath)
+  ? JSON.parse(readFileSync(serviceAccountPath, "utf8"))
+  : null;
+
+const projectId =
+  serviceAccount?.project_id ??
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
+  process.env.GCLOUD_PROJECT ??
+  "sourcehub-local";
 
 const adminApp =
   getApps()[0] ??
   initializeApp({
-    credential: cert(serviceAccount),
-    projectId: serviceAccount.project_id,
+    ...(serviceAccount ? { credential: cert(serviceAccount) } : {}),
+    projectId,
   });
 
 export { adminApp };
