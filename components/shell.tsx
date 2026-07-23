@@ -21,7 +21,8 @@ import {
 } from "@/lib/actions/notifications";
 import { navigationItems } from "@/lib/navigation";
 import { type CurrentUser } from "@/lib/permissions";
-import { Avatar, Badge, Button, Card, CardContent, Breadcrumbs, DropdownMenu, Input, buttonClassName } from "@/components/ui";
+import { Avatar, Badge, Button, Card, CardContent, Breadcrumbs, Input, buttonClassName } from "@/components/ui";
+import { DropdownMenu } from "@/components/dropdown-menu";
 import { cn, formatDateTime, initialsFromName } from "@/lib/utils";
 
 type ShellNotification = {

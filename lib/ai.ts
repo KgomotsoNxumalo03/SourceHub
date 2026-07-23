@@ -20,6 +20,16 @@ function dayKey(date = new Date()) { return date.toISOString().slice(0, 10); }
 function monthKey(date = new Date()) { return date.toISOString().slice(0, 7); }
 function promptHash(prompt: string) { return createHash("sha256").update(prompt).digest("hex"); }
 function moduleAllowed(module?: string) { return !module || env.AI_ALLOWED_MODULES.split(",").map((item) => item.trim()).includes(module); }
+function isMissingIndex(error: unknown) {
+  const candidate = error as { code?: unknown; message?: unknown };
+  return candidate?.code === 9 || candidate?.code === "failed-precondition" || String(candidate?.message ?? "").toLowerCase().includes("requires an index");
+}
+function timestampMillis(value: unknown) {
+  if (value instanceof Date) return value.getTime();
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") return value.toDate().getTime();
+  const parsed = new Date(String(value ?? "")).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 async function effectiveSettings() {
   const document = await firestoreAdmin.collection(collectionNames.aiSettings).doc(aiWorkspaceId).get();
@@ -136,5 +146,53 @@ export async function createAiConversation(actor: CurrentUser, context: AiContex
   return id;
 }
 
-export async function listAiConversations(actor: CurrentUser) { await requireAiAccess(actor); const snapshot = await firestoreAdmin.collection(collectionNames.aiConversations).where("workspaceId", "==", aiWorkspaceId).where("userId", "==", actor.id).orderBy("updatedAt", "desc").limit(30).get(); return snapshot.docs.map((document) => ({ id: document.id, ...document.data() })); }
-export async function loadAiConversation(actor: CurrentUser, id: string) { await requireAiAccess(actor); const document = await firestoreAdmin.collection(collectionNames.aiConversations).doc(id).get(); if (!document.exists || document.data()?.workspaceId !== aiWorkspaceId || document.data()?.userId !== actor.id) throw new Error("Conversation not found."); const messages = await firestoreAdmin.collection(collectionNames.aiMessages).where("workspaceId", "==", aiWorkspaceId).where("conversationId", "==", id).orderBy("createdAt", "asc").limit(100).get(); const proposals = await firestoreAdmin.collection(collectionNames.aiActionProposals).where("workspaceId", "==", aiWorkspaceId).where("conversationId", "==", id).limit(20).get(); return { conversation: { id: document.id, ...document.data() }, messages: messages.docs.map((item) => ({ id: item.id, ...item.data() })), proposals: proposals.docs.map((item) => ({ id: item.id, ...item.data() })) }; }
+export async function listAiConversations(actor: CurrentUser) {
+  await requireAiAccess(actor);
+  const base = firestoreAdmin.collection(collectionNames.aiConversations).where("workspaceId", "==", aiWorkspaceId).where("userId", "==", actor.id);
+  let snapshot;
+  let usedFallback = false;
+  try {
+    snapshot = await base.orderBy("updatedAt", "desc").limit(30).get();
+  } catch (error) {
+    if (!isMissingIndex(error)) throw error;
+    usedFallback = true;
+    snapshot = await base.limit(30).get();
+  }
+  const records = snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+  if (usedFallback) records.sort((left, right) => timestampMillis(right.updatedAt) - timestampMillis(left.updatedAt));
+  return records;
+}
+
+export async function loadAiConversation(actor: CurrentUser, id: string) {
+  await requireAiAccess(actor);
+  const document = await firestoreAdmin.collection(collectionNames.aiConversations).doc(id).get();
+  if (!document.exists || document.data()?.workspaceId !== aiWorkspaceId || document.data()?.userId !== actor.id) throw new Error("Conversation not found.");
+
+  const messageBase = firestoreAdmin.collection(collectionNames.aiMessages).where("workspaceId", "==", aiWorkspaceId).where("conversationId", "==", id);
+  const proposalBase = firestoreAdmin.collection(collectionNames.aiActionProposals).where("workspaceId", "==", aiWorkspaceId).where("conversationId", "==", id);
+  let messages;
+  let proposals;
+  let messagesUsedFallback = false;
+  try {
+    messages = await messageBase.orderBy("createdAt", "asc").limit(100).get();
+  } catch (error) {
+    if (!isMissingIndex(error)) throw error;
+    messagesUsedFallback = true;
+    messages = await firestoreAdmin.collection(collectionNames.aiMessages).where("conversationId", "==", id).limit(100).get();
+  }
+  try {
+    proposals = await proposalBase.limit(20).get();
+  } catch (error) {
+    if (!isMissingIndex(error)) throw error;
+    proposals = await firestoreAdmin.collection(collectionNames.aiActionProposals).where("conversationId", "==", id).limit(20).get();
+  }
+
+  const messageRecords = messages.docs
+    .filter((item) => item.data()?.workspaceId === aiWorkspaceId)
+    .map((item) => ({ id: item.id, ...item.data() }));
+  if (messagesUsedFallback) messageRecords.sort((left, right) => timestampMillis(left.createdAt) - timestampMillis(right.createdAt));
+  const proposalRecords = proposals.docs
+    .filter((item) => item.data()?.workspaceId === aiWorkspaceId)
+    .map((item) => ({ id: item.id, ...item.data() }));
+  return { conversation: { id: document.id, ...document.data() }, messages: messageRecords, proposals: proposalRecords };
+}

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Stability Repair
+
+- Separated the interactive dropdown from shared UI primitives so server-rendered pages can safely generate button class names without a client-boundary runtime error.
+- Added workspace-checked, bounded in-memory fallbacks for AI conversation queries when a deployed Firestore composite index is unavailable.
+
 ### Repository Audit
 
 - Added missing composite indexes for pilot evidence and pilot-scoped operational feedback queries.
