@@ -342,3 +342,30 @@ Onboarding is available at `/onboarding`, platform operations at `/administratio
 Tenant exports are queued as short-lived, audited server jobs and imports must begin as validated dry runs. Delayed tenant deletion uses a recovery window, protects the internal default tenant, scopes every deletion query by tenant ID, and records verification state. The current deletion Function removes commercial projection records; legacy operational records remain protected until an approved migration mapping exists. Support access creates a visible, time-limited, reason-required pending session and does not implement silent impersonation.
 
 Configure only placeholders from `.env.example`. Before any commercial activation, test rules with the Firebase Emulator Suite, verify multi-tenant claims and membership provisioning, complete an isolated export/import and deletion drill, configure a real approved billing adapter in test mode, review support-access controls, and deploy Functions/indexes/rules separately for development, staging, and production. Never commit service-account files, API keys, webhook secrets, payment credentials, private keys, or customer exports.
+
+## Phase 18: Stabilization and Launch Readiness
+
+Phase 18 is a release-gate review. It adds security headers, a non-sensitive `/api/health` liveness endpoint, Storage workspace-isolation regression coverage, safe dependency overrides, CI validation, and operational documentation. Commercial SaaS and live billing remain disabled by default.
+
+Read the release evidence and open gates in:
+
+- `docs/PHASE-18-RELEASE-READINESS.md`
+- `docs/UAT-PLAN.md`
+- `docs/OPERATIONS-RUNBOOKS.md`
+- `docs/PRODUCTION-LAUNCH-CHECKLIST.md`
+
+The local validation commands are:
+
+```powershell
+npm.cmd ci
+npm.cmd test
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd audit -- --audit-level=moderate
+npm.cmd run build
+cd functions
+npm.cmd ci
+npm.cmd run build
+```
+
+Firebase Emulator rules, a real backup restore, UAT approval, production provider configuration, and production deployment authorization remain external release gates. This repository does not claim those activities were completed locally.

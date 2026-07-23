@@ -27,12 +27,12 @@ service firebase.storage {
     }
 
     match /workspaces/{workspaceId}/clients/{clientId}/files/{fileName} {
-      allow read: if hasPermission("client_files.manage") || portalMatches(clientId);
+      allow read: if workspaceMatches(workspaceId) && (hasPermission("client_files.manage") || portalMatches(clientId));
       allow write: if hasPermission("client_files.manage") && workspaceMatches(workspaceId);
     }
 
     match /workspaces/{workspaceId}/assets/{assetId}/{fileName} {
-      allow read: if hasPermission("assets.view") || hasPermission("asset_files.manage");
+      allow read: if workspaceMatches(workspaceId) && (hasPermission("assets.view") || hasPermission("asset_files.manage"));
       allow write: if hasPermission("asset_files.manage") && workspaceMatches(workspaceId);
     }
 
@@ -50,13 +50,13 @@ service firebase.storage {
     }
 
     match /workspaces/{workspaceId}/tickets/{ticketReference}/files/{fileName} {
-      allow read: if hasPermission("tickets.view");
+      allow read: if workspaceMatches(workspaceId) && hasPermission("tickets.view");
       allow write: if hasPermission("tickets.attach") && workspaceMatches(workspaceId);
     }
 
     match /workspaces/{workspaceId}/projects/{projectId}/{fileName} {
       allow read: if workspaceMatches(workspaceId) && hasPermission("projects.view")
-        || portalMatches(get(/databases/(default)/documents/projects/$(projectId)).data.clientId)
+        || workspaceMatches(workspaceId) && portalMatches(get(/databases/(default)/documents/projects/$(projectId)).data.clientId)
           && get(/databases/(default)/documents/projects/$(projectId)).data.clientPortalVisible == true;
       allow write: if workspaceMatches(workspaceId) && hasPermission("project_files.manage")
         && request.resource.size < 25 * 1024 * 1024
@@ -72,7 +72,7 @@ service firebase.storage {
 
     match /workspaces/{workspaceId}/knowledge/{articleId}/{fileName} {
       allow read: if workspaceMatches(workspaceId) && hasPermission("knowledge.internal.view")
-        || (signedIn() && get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.status == "PUBLISHED"
+        || (workspaceMatches(workspaceId) && get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.status == "PUBLISHED"
           && get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.visibility == "CLIENT"
           && portalMatches(get(/databases/(default)/documents/knowledgeArticles/$(articleId)).data.clientId));
       allow write: if workspaceMatches(workspaceId) && hasPermission("knowledge.files.manage")

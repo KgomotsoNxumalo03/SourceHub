@@ -1,0 +1,58 @@
+name: SourceHub CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sourcehub-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+
+      - name: Production build
+        run: npm run build
+
+      - name: Build Cloud Functions
+        working-directory: functions
+        run: npm ci && npm run build
+
+      - name: Secret filename guard
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|.*(service-account|private-key).*\.json$)' | grep -vE '(^|/)(\.env\.example|.*\.example$)'; then
+            echo "Sensitive configuration filename is tracked"
+            exit 1
+          fi
